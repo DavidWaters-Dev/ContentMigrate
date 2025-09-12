@@ -1,0 +1,93 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme {
+  --font-display: "Manrope", "sans-serif";
+  --font-code: "Source Code Pro", "monospace";
+  
+  --color-primary-50: theme("colors.blue.50");
+  --color-primary-100: theme("colors.blue.100");
+  --color-primary-200: theme("colors.blue.200");
+  --color-primary-300: theme("colors.blue.300");
+  --color-primary-400: theme("colors.blue.400");
+  --color-primary-500: theme("colors.blue.500");
+  --color-primary-600: theme("colors.blue.600");
+  --color-primary-700: theme("colors.blue.700");
+  --color-primary-800: theme("colors.blue.800");
+  --color-primary-900: theme("colors.blue.900");
+  --color-primary-950: theme("colors.blue.950");
+}
+
+/* Light/Dark theme tokens */
+:root {
+  --color-background: theme("colors.white");
+  --color-background-subtle: theme("colors.zinc.50");
+  --color-foreground: theme("colors.zinc.900");
+  --color-foreground-subtle: theme("colors.zinc.600");
+  --color-border: theme("colors.zinc.200");
+  --color-border-hover: theme("colors.zinc.300");
+  --color-accent: theme("colors.blue.600");
+  --color-accent-hover: theme("colors.blue.500");
+  --color-accent-subtle: theme("colors.blue.50");
+  --color-success: theme("colors.emerald.600");
+  --color-warning: theme("colors.amber.600");
+  --color-error: theme("colors.rose.600");
+  --color-info: theme("colors.sky.600");
+}
+
+.dark {
+  --color-background: theme("colors.zinc.950");
+  --color-background-subtle: theme("colors.zinc.900");
+  --color-foreground: theme("colors.zinc.100");
+  --color-foreground-subtle: theme("colors.zinc.400");
+  --color-border: theme("colors.zinc.800");
+  --color-border-hover: theme("colors.zinc.700");
+  --color-accent: theme("colors.blue.500");
+  --color-accent-hover: theme("colors.blue.400");
+  --color-accent-subtle: theme("colors.blue.900");
+  --color-success: theme("colors.emerald.500");
+  --color-warning: theme("colors.amber.500");
+  --color-error: theme("colors.rose.500");
+  --color-info: theme("colors.sky.500");
+}
+
+body {
+  font-family: var(--font-display);
+  @apply bg-[var(--color-background)] text-[var(--color-foreground)];
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  @apply tracking-tight text-[var(--color-foreground)];
+}
+
+/* Cards */
+.u-card {
+  @apply bg-[var(--color-background)] border-[var(--color-border)];
+}
+
+/* Buttons */
+.u-button {
+  @apply text-[var(--color-foreground)];
+}
+
+/* Links */
+.u-link {
+  @apply text-[var(--color-accent)] hover:text-[var(--color-accent-hover)];
+}
+
+/* Inputs */
+.u-input {
+  @apply bg-[var(--color-background)] border-[var(--color-border)] text-[var(--color-foreground)];
+}
+
+/* Gradient text for headings */
+.gradient-text {
+  @apply bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent;
+}

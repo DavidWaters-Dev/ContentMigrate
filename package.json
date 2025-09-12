@@ -1,0 +1,37 @@
+{
+  "name": "nuxt-app",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxt/content": "^3.6.3",
+    "@nuxt/eslint": "^1.9.0",
+    "@nuxt/image": "^1.11.0",
+    "@nuxt/scripts": "^0.11.13",
+    "@nuxt/ui": "^3.3.3",
+    "@nuxtjs/mdc": "^0.17.3",
+    "@unhead/vue": "^2.0.14",
+    "better-sqlite3": "^12.2.0",
+    "cheerio": "^1.1.2",
+    "lighthouse": "^12.2.0",
+    "eslint": "^9.34.0",
+    "nuxt": "^4.0.3",
+    "typescript": "^5.9.2",
+    "vue": "^3.5.20",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@nuxtjs/color-mode": "^3.5.2",
+    "@nuxtjs/kinde": "^0.3.0",
+    "@nuxtjs/supabase": "^1.6.1",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/youtube": "^0.1.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
