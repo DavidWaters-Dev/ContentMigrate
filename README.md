@@ -77,6 +77,10 @@ bun run dev
   - `POST /api/migrate/enqueue` → `{ jobId, plannedPages }` (reserves quota when configured)
   - `GET /api/migrate/jobs/:id/status` → `{ status, results, logs }` (RLS: only job owner sees)
 - Worker ticks `POST /api/migrate/worker-tick` internally and claims jobs via `fn_migration_jobs_claim`.
+ - Concurrency:
+   - `MIGRATION_WORKER_BATCH` (default 3) — max jobs claimed per tick
+   - `MIGRATION_WORKER_CONCURRENCY` (default 1) — max jobs processed in parallel per tick
+   - `MIGRATION_PAGE_CONCURRENCY` (default 2) — per-job page conversion concurrency
 
 ## Usage (Migration)
 
@@ -86,6 +90,7 @@ bun run dev
 4. Configure content folder, media folder, frontmatter keys, and optional selector/prompt.
 5. Run migration. Files will be written to your project (e.g., `content/...`, `public/images/...`).
 6. Converted pages are tracked in LocalStorage and marked with a badge in the list.
+7. Visit `/jobs` to view your queued/completed migration jobs and details.
 
 ## Production
 
