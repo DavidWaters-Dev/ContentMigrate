@@ -10,7 +10,7 @@ export default defineNitroPlugin((nitro) => {
     if (running) return
     running = true
     try {
-      await nitro.localFetch('/api/migrate/process', { method: 'POST' })
+      await nitro.localFetch('/api/migrate/worker-tick', { method: 'POST' })
     } catch (e: any) {
       console.error('[MigrationWorker] error:', e?.message || e)
     } finally {
@@ -22,4 +22,3 @@ export default defineNitroPlugin((nitro) => {
   setTimeout(tick, 1000)
   nitro.hooks.hookOnce('close', () => { if (timer) clearInterval(timer) })
 })
-

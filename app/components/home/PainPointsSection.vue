@@ -20,7 +20,7 @@
         <h2 class="text-4xl md:text-5xl font-semibold tracking-tight">
           Smoothly move from legacy CMS to Nuxt Content
         </h2>
-        <p class="text:[var(--color-foreground-subtle)] max-w-2xl mx-auto text-lg">
+        <p class="text-[var(--color-foreground-subtle)] max-w-2xl mx-auto text-lg">
           Avoid tedious copy/paste, broken images, and inconsistent frontmatter.
         </p>
       </div>

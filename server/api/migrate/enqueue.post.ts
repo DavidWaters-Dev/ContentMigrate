@@ -1,15 +1,9 @@
-import { enqueueMigration } from '../../utils/migration-queue'
 import { addUsage } from '../../utils/usage'
+import { createSupabaseServerClient } from '../../utils/supabaseServer'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ crawlId: string, includedUrls?: string[], options?: any }>(event)
   if (!body?.crawlId) throw createError({ statusCode: 400, statusMessage: 'crawlId required' })
-  let submittedBy: string | undefined
-  try {
-    const kinde = (event as any)?.context?.kinde
-    const user = await kinde?.getUser()
-    submittedBy = user?.id
-  } catch {}
   // Reserve quota if available
   const DAILY_MIGRATION_LIMIT = 1000
   let included = (body.includedUrls || []).filter(Boolean)
@@ -24,6 +18,16 @@ export default defineEventHandler(async (event) => {
     // If Supabase/quotas aren’t configured, proceed without reservation
     console.warn('[Enqueue] Quota reservation skipped:', e?.message || e)
   }
-  const id = enqueueMigration({ crawlId: body.crawlId, includedUrls: included, options: body.options }, submittedBy)
-  return { jobId: id, plannedPages: included.length }
+  // Enqueue job in Supabase
+  try {
+    const supabase = await createSupabaseServerClient(event)
+    const { data: jobId, error } = await supabase.rpc('fn_migration_jobs_enqueue', {
+      p_payload: { crawlId: body.crawlId, includedUrls: included, options: body.options },
+      p_priority: 100
+    })
+    if (error) throw error
+    return { jobId, plannedPages: included.length }
+  } catch (e: any) {
+    throw createError({ statusCode: 500, statusMessage: e?.message || 'Failed to enqueue job' })
+  }
 })

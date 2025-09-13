@@ -10,7 +10,7 @@ Key features:
 - Download and rewrite images into a chosen `public/` folder
 - LocalStorage keeps a log of converted pages (shows a "Converted" badge)
 
-Note: This repository is now a standalone content migration tool. The previous SEO audit flow has been removed. A lightweight in‑memory worker queue throttles migration jobs for safe concurrency.
+Note: This repository is now a standalone content migration tool. The previous SEO audit flow has been removed. A Supabase-backed job queue and worker throttle migration jobs for safe concurrency.
 
 ## Getting Started
 
@@ -44,9 +44,13 @@ yarn install
 bun install
 ```
 
-3) Run database migrations (optional for quotas)
+3) Run database migrations
 
-- Apply the SQL in `supabase/migrations/0001_usage_counters.sql` and `0004_refactor_usage_tokens.sql` if you want daily/monthly quota tracking with Supabase RPC (`fn_usage_add`).
+- Apply the SQL in:
+  - `supabase/migrations/0001_usage_counters.sql`
+  - `supabase/migrations/0004_refactor_usage_tokens.sql`
+  - `supabase/migrations/0002_migration_jobs_queue.sql`
+  See `docs/migrations.md` for details.
 
 4) Development Server
 
@@ -66,14 +70,13 @@ yarn dev
 bun run dev
 ```
 
-5) Background processing
+5) Background processing (Supabase queue)
 
-Set `MIGRATION_WORKER=1` (default) to enable a small in‑memory worker that processes enqueued migration jobs sequentially. Endpoints:
-
-- `POST /api/migrate/enqueue` → `{ jobId }`
-- `GET /api/migrate/jobs/:id/status` → `{ status, results, logs }`
-
-Dev tip: Interval is configurable via `MIGRATION_INTERVAL_MS`.
+- Enable env: `MIGRATION_WORKER=1`, `SUPABASE_SERVICE_ROLE_KEY`.
+- API:
+  - `POST /api/migrate/enqueue` → `{ jobId, plannedPages }` (reserves quota when configured)
+  - `GET /api/migrate/jobs/:id/status` → `{ status, results, logs }` (RLS: only job owner sees)
+- Worker ticks `POST /api/migrate/worker-tick` internally and claims jobs via `fn_migration_jobs_claim`.
 
 ## Usage (Migration)
 
@@ -122,4 +125,5 @@ Check out the [deployment documentation](https://nuxt.com/docs/getting-started/d
 
 ## Documentation
 
-- Coming soon: tips for selectors, prompts, and folder strategies
+- Migrations: `docs/migrations.md`
+- Tips for selectors, prompts, and folder strategies (coming soon)
