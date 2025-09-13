@@ -12,9 +12,9 @@
           <span class="i-lucide-layers text-[var(--color-accent)]" />
           Comprehensive toolset
         </div>
-        <h2 class="text-4xl md:text-5xl font-semibold tracking-tight">Powerful features for serious SEO</h2>
+        <h2 class="text-4xl md:text-5xl font-semibold tracking-tight">Powerful features for fast migration</h2>
         <p class="text-[var(--color-foreground-subtle)] max-w-2xl mx-auto text-lg">
-          Everything you need to analyze, optimize, and monitor your website's search performance
+          Everything you need to crawl, select, and convert site content into clean Markdown for Nuxt Content
         </p>
       </div>
       
@@ -55,69 +55,69 @@
 <script setup lang="ts">
 const features = [
   {
-    title: 'Intelligent Crawling',
+    title: 'Smart Crawling',
     icon: 'i-lucide-globe',
-    description: 'Scan your entire website efficiently with our smart crawler.',
+    description: 'Discover pages via sitemap or internal links with polite defaults.',
     points: [
       'Respects robots.txt and sitemap.xml',
-      'Configurable crawl depth and speed',
-      'Handles JavaScript-rendered content',
-      'Detects duplicate content issues'
+      'Configurable page cap and concurrency',
+      'Internal link extraction',
+      'Blocklist via robots rules'
     ]
   },
   {
-    title: 'AI-Powered Analysis',
+    title: 'AI Markdown Conversion',
     icon: 'i-lucide-brain',
-    description: 'Get insights from our advanced AI that understands SEO context.',
+    description: 'Generate clean Markdown for Nuxt Content with optional selector guidance.',
     points: [
-      'Content quality assessment',
-      'Keyword optimization suggestions',
-      'Competitive gap analysis',
-      'Prioritized action items'
+      'Frontmatter extraction and mapping',
+      'Article-only extraction (e.g., <article>)',
+      'Slug suggestions',
+      'Structured output consistency'
     ]
   },
   {
-    title: 'Technical SEO Audit',
-    icon: 'i-lucide-settings',
-    description: 'Identify and fix technical issues affecting your rankings.',
+    title: 'Image Handling',
+    icon: 'i-lucide-image',
+    description: 'Download, organize, and rewrite image URLs to local paths.',
     points: [
-      'Core Web Vitals analysis',
-      'Schema markup validation',
-      'Mobile-friendliness checks',
-      'Broken link detection'
+      'Saves to public/images/.../<slug>/',
+      'Rewrites Markdown image references',
+      'Auto-set main image when missing',
+      'Avoids duplicates per page run'
     ]
   },
   {
-    title: 'Content Optimization',
-    icon: 'i-lucide-file-text',
-    description: 'Improve your content for both users and search engines.',
+    title: 'Configurable Frontmatter',
+    icon: 'i-lucide-sliders-horizontal',
+    description: 'Define frontmatter keys (date, mainImage, sortOrder, etc.) and defaults.',
     points: [
-      'Readability analysis',
-      'E-E-A-T assessment',
-      'Semantic relevance scoring',
-      'Title and meta optimization'
+      'Add/remove keys quickly',
+      'Apply defaults per migration',
+      'Source URL recorded',
+      'Exports YAML/JSON sidecars'
     ]
   },
   {
-    title: 'Performance Metrics',
-    icon: 'i-lucide-gauge',
-    description: 'Monitor and improve your site speed and user experience.',
+    title: 'Local Progress Tracking',
+    icon: 'i-lucide-badge-check',
+    description: 'LocalStorage records converted pages for quick visual feedback.',
     points: [
-      'Page load time analysis',
-      'Core Web Vitals monitoring',
-      'Mobile performance testing',
-      'Resource optimization tips'
+      '“Converted” badge per URL',
+      'Resume friendly',
+      'No server DB required',
+      'Lightweight and fast'
     ]
   },
   {
-    title: 'Actionable Reports',
-    icon: 'i-lucide-bar-chart',
-    description: 'Get clear, actionable reports you can share with your team.',
+    title: 'Safe Defaults',
+    icon: 'i-lucide-shield-check',
+    description: 'Built-in caps and politeness to keep migrations reliable.',
     points: [
-      'Exportable PDF reports',
-      'Priority-based recommendations',
-      'Before/after comparisons',
-      'Executive summaries'
+      'Concurrency caps during crawl',
+      'Optional quotas (Supabase)',
+      'Per-request timeouts',
+      'Graceful error handling'
     ]
   }
 ]

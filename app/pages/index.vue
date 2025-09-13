@@ -39,11 +39,11 @@
       <UContainer>
         <div class="flex items-center justify-between">
           <div class="hidden md:block">
-            <h3 class="font-semibold">Ready to improve your SEO?</h3>
-            <p class="text-sm text-gray-600">Start with a free audit today</p>
+            <h3 class="font-semibold">Ready to migrate your content?</h3>
+            <p class="text-sm text-gray-600">Start converting pages to Markdown</p>
           </div>
-          <UButton color="primary" size="lg" to="/dashboard" class="ml-auto">
-            Start free audit
+          <UButton color="primary" size="lg" to="/migrate" class="ml-auto">
+            Start migration
             <template #trailing>
               <span class="i-lucide-arrow-right"></span>
             </template>
@@ -67,17 +67,17 @@
 
   // SEO metadata
   useHead({
-    title: "AI SEO Auditor - Improve Your Website Rankings",
+    title: "Content Migrator - Convert sites to Nuxt Content",
     meta: [
       {
         name: "description",
         content:
-          "Uncover your website's hidden SEO potential with our AI-powered SEO auditing tool. Get actionable insights and improve your rankings.",
+          "Crawl a site, select pages, and convert to clean Markdown for Nuxt Content with local images and configurable frontmatter.",
       },
       {
         name: "keywords",
         content:
-          "seo audit, website analysis, ai seo tool, search engine optimization",
+          "content migration, nuxt content, markdown, website scraper, ai migration",
       },
     ],
   });

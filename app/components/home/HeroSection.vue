@@ -14,22 +14,21 @@
       <div class="max-w-3xl mx-auto text-center space-y-10">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs border-[var(--color-border)] bg-[var(--color-background-subtle)] text-[var(--color-accent)]">
           <span class="i-lucide-sparkles text-[var(--color-accent)]" />
-          AI-powered technical + on-page insights
+          AI-powered content migration
         </div>
 
         <h1 class="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight">
-          <span class="block mb-2">Uncover your</span>
-          <span class="gradient-text">SEO potential</span>
+          <span class="block mb-2">Streamline your</span>
+          <span class="gradient-text">content migration</span>
         </h1>
 
         <p class="text-[var(--color-foreground-subtle)] max-w-2xl mx-auto text-lg">
-          Crawl your website, analyze structure and content with AI, and get a
-          prioritized list of SEO issues and opportunities.
+          Crawl a site, select pages, and convert to clean Markdown with local images and customizable frontmatter.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center pt-6">
-          <UButton size="xl" color="primary" to="/dashboard" class="font-medium">
-            Start free audit
+          <UButton size="xl" color="primary" to="/migrate" class="font-medium">
+            Start migration
             <template #trailing>
               <span class="i-lucide-arrow-right"></span>
             </template>

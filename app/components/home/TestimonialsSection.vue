@@ -11,10 +11,10 @@
           Customer testimonials
         </div>
         <h2 class="text-4xl md:text-5xl font-semibold tracking-tight">
-          Trusted by SEO professionals
+          Trusted by content teams
         </h2>
         <p class="text-[var(--color-foreground-subtle)] max-w-2xl mx-auto text-lg">
-          See what our customers are saying about the SEO Auditor tool
+          See how teams streamline website migrations into Nuxt Content
         </p>
       </div>
 
@@ -76,53 +76,53 @@
 <script setup lang="ts">
   const testimonials = [
     {
-      name: "Sarah Johnson",
-      role: "SEO Manager at TechCorp",
+      name: 'Sarah Johnson',
+      role: 'Head of Content @ TechCorp',
       stars: 5,
       quote:
-        "This tool found critical issues our previous audit missed. We saw a 32% increase in organic traffic after implementing the recommendations.",
-      avatar: "/images/testimonials/sarah.jpg",
+        'We migrated ~200 pages from Squarespace to Nuxt Content in a weekend. Markdown quality was excellent and images mapped perfectly.',
+      avatar: '/images/testimonials/sarah.jpg'
     },
     {
-      name: "Michael Chen",
-      role: "Digital Marketing Director",
+      name: 'Michael Chen',
+      role: 'Engineering Manager',
       stars: 5,
       quote:
-        "The AI-powered insights are game-changing. It's like having an SEO expert on your team 24/7. Highly recommended for any serious website owner.",
-      avatar: "/images/testimonials/michael.jpg",
+        'The selector + frontmatter controls were spot on. Our team saved days of manual copy/paste and cleanup.',
+      avatar: '/images/testimonials/michael.jpg'
     },
     {
-      name: "Emma Rodriguez",
-      role: "E-commerce Specialist",
+      name: 'Emma Rodriguez',
+      role: 'E‑commerce Lead',
       stars: 4,
       quote:
-        "We've tried many SEO tools, but this one stands out for its actionable recommendations. Our product pages now rank much higher than before.",
-      avatar: "",
+        'Loved the image handling and local paths. It made reviewing changes in Git incredibly clear.',
+      avatar: ''
     },
     {
-      name: "David Wilson",
-      role: "Agency Founder",
+      name: 'David Wilson',
+      role: 'Agency Founder',
       stars: 5,
       quote:
-        "This tool has become essential for our client onboarding process. It helps us quickly identify issues and create a roadmap for improvement.",
-      avatar: "/images/testimonials/david.jpg",
+        'We run client migrations with consistent results. The converted badge tracking is a nice touch for QA.',
+      avatar: '/images/testimonials/david.jpg'
     },
     {
-      name: "Jessica Taylor",
-      role: "Content Strategist",
+      name: 'Jessica Taylor',
+      role: 'Content Strategist',
       stars: 5,
       quote:
-        "The content analysis is incredibly detailed. It helped us restructure our blog and improve our E-E-A-T signals significantly.",
-      avatar: "",
+        'Frontmatter config let us fit our existing content model with zero refactors. Huge time saver.',
+      avatar: ''
     },
     {
-      name: "Robert Kim",
-      role: "Technical SEO Consultant",
+      name: 'Robert Kim',
+      role: 'Full‑stack Developer',
       stars: 4,
       quote:
-        "The technical SEO audit is comprehensive and catches issues that even experienced professionals might miss. A valuable addition to my toolkit.",
-      avatar: "/images/testimonials/robert.jpg",
-    },
+        'Simple setup, clean output. The Markdown was production ready without heavy manual edits.',
+      avatar: '/images/testimonials/robert.jpg'
+    }
   ];
 
   const companyLogos = [

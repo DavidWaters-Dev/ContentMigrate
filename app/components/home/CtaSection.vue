@@ -8,16 +8,15 @@
     <UContainer class="relative z-10">
       <div class="max-w-4xl mx-auto text-center space-y-8">
         <h2 class="text-4xl md:text-5xl font-semibold tracking-tight">
-          Ready to improve your search rankings?
+          Ready to migrate your content?
         </h2>
         <p class="text-lg md:text-xl text-[var(--color-foreground-subtle)] max-w-2xl mx-auto">
-          Start with a free audit today and discover how your website can
-          perform better in search results
+          Convert your existing site into clean Markdown for Nuxt Content with images saved locally and customizable frontmatter.
         </p>
 
         <div class="pt-6">
-          <UButton size="xl" to="/dashboard" color="primary" class="font-medium border-0">
-            Start free audit
+          <UButton size="xl" to="/migrate" color="primary" class="font-medium border-0">
+            Start migration
             <template #trailing>
               <span class="i-lucide-arrow-right"></span>
             </template>

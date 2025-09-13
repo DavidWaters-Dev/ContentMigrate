@@ -16,11 +16,10 @@
           Watch the demo
         </div>
         <h2 class="text-4xl md:text-5xl font-semibold tracking-tight">
-          See the auditor in action
+          See the migrator in action
         </h2>
         <p class="text-[var(--color-foreground-subtle)] max-w-2xl mx-auto text-lg">
-          Watch how our AI SEO Auditor analyzes your site and delivers
-          actionable insights in minutes
+          Watch how the tool crawls a site and converts content into Markdown and local images ready for Nuxt Content.
         </p>
       </div>
 
@@ -35,8 +34,8 @@
 
       <div class="text-center space-y-4">
         <p class="text-[var(--color-foreground-subtle)]">Ready to try it on your own website?</p>
-        <UButton size="lg" to="/dashboard" color="primary" class="border-0">
-          Start free audit now
+        <UButton size="lg" to="/migrate" color="primary" class="border-0">
+          Start migration now
         </UButton>
       </div>
     </UContainer>

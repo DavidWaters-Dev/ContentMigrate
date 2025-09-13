@@ -37,12 +37,7 @@
             </p>
 
             <ul class="mt-6 space-y-3">
-              <li class="flex gap-2">
-                <span
-                  class="i-lucide-check text-green-400 flex-shrink-0"
-                ></span>
-                <span class="text-sm">5 pages per audit</span>
-              </li>
+              <li class="flex gap-2"><span class="i-lucide-check text-green-400 flex-shrink-0"></span><span class="text-sm">5 pages per migration</span></li>
               <li class="flex gap-2">
                 <span
                   class="i-lucide-check text-green-400 flex-shrink-0"
@@ -57,20 +52,11 @@
                 ></span>
                 <span class="text-sm text-zinc-300">On-page SEO checks</span>
               </li>
-              <li class="flex gap-2">
-                <span
-                  class="i-lucide-check text-green-400 flex-shrink-0"
-                ></span>
-                <span class="text-sm text-zinc-300">1 audit per day</span>
-              </li>
+              <li class="flex gap-2"><span class="i-lucide-check text-green-400 flex-shrink-0"></span><span class="text-sm text-zinc-300">1 migration batch per day</span></li>
             </ul>
           </div>
           <div class="px-6 py-4 border-t border-[var(--color-border)]">
-            <UButton
-              block
-              color="primary"
-              to="/dashboard"
-            >
+            <UButton block color="primary" to="/migrate">
               Start for free
             </UButton>
           </div>
@@ -96,12 +82,7 @@
             </p>
 
             <ul class="mt-6 space-y-3">
-              <li class="flex gap-2">
-                <span
-                  class="i-lucide-check text-green-400 flex-shrink-0"
-                ></span>
-                <span class="text-sm text-zinc-300">50 pages per audit</span>
-              </li>
+              <li class="flex gap-2"><span class="i-lucide-check text-green-400 flex-shrink-0"></span><span class="text-sm text-zinc-300">50 pages per migration</span></li>
               <li class="flex gap-2">
                 <span
                   class="i-lucide-check text-green-400 flex-shrink-0"
@@ -122,14 +103,7 @@
                 ></span>
                 <span class="text-sm text-zinc-300">Competitor analysis</span>
               </li>
-              <li class="flex gap-2">
-                <span
-                  class="i-lucide-check text-green-400 flex-shrink-0"
-                ></span>
-                <span class="text-sm text-zinc-300"
-                  >Weekly scheduled audits</span
-                >
-              </li>
+              <li class="flex gap-2"><span class="i-lucide-check text-green-400 flex-shrink-0"></span><span class="text-sm text-zinc-300">Priority worker queue</span></li>
               <li class="flex gap-2">
                 <span
                   class="i-lucide-check text-green-400 flex-shrink-0"

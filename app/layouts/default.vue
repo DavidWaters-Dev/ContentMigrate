@@ -15,7 +15,7 @@
     >
       <UContainer class="flex items-center justify-between h-16">
         <div class="flex items-center gap-4">
-          <div class="text-base font-extrabold tracking-tight">SEOAudit</div>
+          <div class="text-base font-extrabold tracking-tight">ContentMigrate</div>
           <div
             class="text-xs font-medium tracking-tight text-[var(--color-foreground-subtle)]"
           >
@@ -23,8 +23,8 @@
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <UButton to="/dashboard" color="primary" variant="ghost">
-            Start Audit
+          <UButton to="/migrate" color="primary" variant="ghost">
+            Start Migration
           </UButton>
           <UButton
             variant="ghost"
@@ -61,7 +61,7 @@
 
 <script setup lang="ts">
   const config = useRuntimeConfig();
-  const appName = config.public.appName || "AI SEO Auditor";
+  const appName = config.public.appName || "Content Migrator";
   const colorMode = useColorMode();
   const nextMode = computed(() =>
     colorMode.value === "dark" ? "light" : "dark"

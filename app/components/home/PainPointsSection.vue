@@ -15,14 +15,13 @@
           class="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-accent)]"
         >
           <span class="i-lucide-zap text-blue-400" />
-          Actionable insights
+          Migration pain points
         </div>
         <h2 class="text-4xl md:text-5xl font-semibold tracking-tight">
-          Solve your biggest SEO challenges
+          Smoothly move from legacy CMS to Nuxt Content
         </h2>
-        <p class="text-[var(--color-foreground-subtle)] max-w-2xl mx-auto text-lg">
-          Stop guessing what's holding back your rankings and start fixing the
-          real issues
+        <p class="text:[var(--color-foreground-subtle)] max-w-2xl mx-auto text-lg">
+          Avoid tedious copy/paste, broken images, and inconsistent frontmatter.
         </p>
       </div>
 
@@ -40,9 +39,7 @@
             </div>
           </div>
           <div>
-            <h3 class="text-xl font-semibold mb-3">
-              {{ item.problem }}
-            </h3>
+            <h3 class="text-xl font-semibold mb-3">{{ item.problem }}</h3>
             <p class="text-[var(--color-foreground-subtle)] mb-4">{{ item.description }}</p>
             <div class="flex items-center">
               <span class="text-sm font-medium text-[var(--color-accent)]"
@@ -62,21 +59,10 @@
             <span class="i-lucide-lightbulb text-6xl text-[var(--color-accent)]"></span>
           </div>
           <div class="md:w-3/4">
-            <h3 class="text-2xl font-semibold mb-3">
-              Stop losing traffic to competitors
-            </h3>
-            <p class="text-[var(--color-foreground-subtle)] mb-6">
-              Most websites have hidden SEO issues that are costing them
-              valuable traffic and revenue. Our AI-powered audit tool finds
-              these issues and gives you a clear plan to fix them.
-            </p>
-            <UButton
-              color="primary"
-              size="lg"
-              to="/dashboard"
-              class="border-0"
-            >
-              Start your free audit
+            <h3 class="text-2xl font-semibold mb-3">No more manual migrations</h3>
+            <p class="text-[var(--color-foreground-subtle)] mb-6">Convert content to Markdown with frontmatter and local images — ready to drop into your Nuxt Content project.</p>
+            <UButton color="primary" size="lg" to="/migrate" class="border-0">
+              Start migration
             </UButton>
           </div>
         </div>
@@ -86,34 +72,30 @@
 </template>
 
 <script setup lang="ts">
-  const painPoints = [
-    {
-      problem: "Invisible technical issues",
-      description:
-        "Hidden problems like slow page speed, broken links, and crawl errors can silently damage your rankings.",
-      solution: "Comprehensive technical audit with prioritized fixes",
-      icon: "i-lucide-bug",
-    },
-    {
-      problem: "Content not ranking well",
-      description:
-        "Creating content that doesn't match search intent or lacks proper optimization wastes resources.",
-      solution: "AI content analysis with actionable improvement tips",
-      icon: "i-lucide-file-question",
-    },
-    {
-      problem: "Confusing SEO data",
-      description:
-        "Too many tools showing different metrics makes it hard to know what to focus on first.",
-      solution: "Clear, prioritized recommendations with impact scores",
-      icon: "i-lucide-bar-chart-3",
-    },
-    {
-      problem: "Keeping up with algorithm changes",
-      description:
-        "Google's constant updates make it difficult to stay current with best practices.",
-      solution: "Always-updated analysis based on latest SEO standards",
-      icon: "i-lucide-refresh-cw",
-    },
-  ];
+const painPoints = [
+  {
+    problem: 'Manual copy/paste is error‑prone',
+    description: 'Moving pages by hand leads to broken links, missing images, and inconsistent formatting.',
+    solution: 'Automated HTML → Markdown with image downloading and path rewriting',
+    icon: 'i-lucide-clipboard-check'
+  },
+  {
+    problem: 'Frontmatter chaos',
+    description: 'Different pages need different metadata; keeping it consistent is hard.',
+    solution: 'Configurable frontmatter keys with defaults and AI‑assisted values',
+    icon: 'i-lucide-sliders-horizontal'
+  },
+  {
+    problem: 'Media ends up scattered',
+    description: 'Images saved in random places make content unmaintainable.',
+    solution: 'Deterministic media folders per page (e.g., public/images/<section>/<slug>/',
+    icon: 'i-lucide-image'
+  },
+  {
+    problem: 'Slow migrations block teams',
+    description: 'Large batches overwhelm APIs and people, causing delays.',
+    solution: 'Crawl caps and a worker queue to throttle safely',
+    icon: 'i-lucide-rocket'
+  }
+]
 </script>

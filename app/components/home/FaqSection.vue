@@ -12,7 +12,7 @@
         </div>
         <h2 class="text-4xl md:text-5xl font-semibold tracking-tight">Frequently asked questions</h2>
         <p class="text-[var(--color-foreground-subtle)] max-w-2xl mx-auto text-lg">
-          Everything you need to know about the SEO Auditor tool
+          Everything you need to know about migrating content to Nuxt Content
         </p>
       </div>
      
@@ -33,33 +33,29 @@
 <script setup lang="ts">
 const faqItems = [
   {
-    label: 'How does the SEO Auditor tool work?',
-    content: 'Our tool crawls your website, analyzes each page using advanced AI algorithms, and provides actionable recommendations based on modern SEO best practices. It checks technical aspects, content quality, user experience factors, and more to give you a comprehensive view of your site\'s SEO health.',
+    label: 'How does the Content Migrator work?',
+    content: 'Enter a site URL and start a crawl. Select the pages you want, then configure frontmatter, content and media folders, and an optional CSS selector. The tool uses AI to convert the selected content into Markdown with local images and writes files to your project.',
     defaultOpen: true
   },
   {
     label: 'Do I need technical knowledge to use this tool?',
-    content: 'Not at all! The SEO Auditor is designed to be user-friendly for everyone from beginners to experts. Our recommendations are clear and actionable, with step-by-step instructions for implementing fixes. For more complex issues, we provide detailed explanations to help you understand the underlying concepts.'
+    content: 'No. The UI guides you through crawl, selection, and conversion. You can optionally provide a CSS selector (e.g., \'article\') to target main content. The output works out-of-the-box with Nuxt Content.'
   },
   {
-    label: 'How often should I run an SEO audit?',
-    content: 'We recommend running a full audit at least once a month, and after any major website changes or updates. For larger websites, you might want to set up weekly scheduled audits to catch issues early. Our Pro and Enterprise plans include automated scheduled audits.'
+    label: 'Can I customize frontmatter?',
+    content: 'Yes. Add any frontmatter keys you need (title, date, mainImage, sortOrder, etc.). You can set defaults and the AI will populate values where possible. The tool also records the source URL.'
   },
   {
-    label: 'Can I audit my competitors\' websites?',
-    content: 'You can audit any publicly accessible website. However, please note that some features may be limited for sites you don\'t own (such as detailed page speed analysis that requires server access). Our Enterprise plan includes specific competitor analysis features designed for benchmarking.'
+    label: 'Where do images go?',
+    content: 'Images are downloaded into your chosen media folder under a page-specific subfolder (e.g., public/images/news/<slug>/). Markdown image references are rewritten to local paths.'
   },
   {
-    label: 'How is this different from other SEO tools?',
-    content: 'Our SEO Auditor combines advanced AI analysis with practical, actionable recommendations. Unlike many tools that overwhelm you with data, we prioritize issues by impact and provide clear steps to fix them. We also focus on modern SEO factors like E-E-A-T, Core Web Vitals, and AI-readiness that many tools overlook.'
+    label: 'Does it overwrite existing files?',
+    content: 'If a filename already exists, the tool will overwrite it. For safety, use a dedicated content subfolder when migrating and review changes in version control.'
   },
   {
-    label: 'Can I export the audit results?',
-    content: 'Yes! All plans allow you to export your results in PDF format. The Pro and Enterprise plans also support CSV exports for data analysis and white-labeled reports you can share with clients or team members.'
-  },
-  {
-    label: 'Is there a limit to how many pages I can audit?',
-    content: 'The Free plan allows up to 5 pages per audit. The Pro plan increases this to 50 pages, which is sufficient for most small to medium websites. The Enterprise plan offers unlimited pages, making it ideal for large websites or agencies managing multiple clients.'
+    label: 'Is there a limit on pages?',
+    content: 'You can set a max page cap during crawl and choose specific pages to migrate. For team usage, we recommend enabling quotas and concurrency limits (optional Supabase integration) — ask us if you need help.'
   }
 ]
 </script>

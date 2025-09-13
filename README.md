@@ -1,8 +1,16 @@
-# AI SEO Auditor (Nuxt)
+# Content Migrator (Nuxt)
 
-This app crawls websites, analyzes pages with AI, and presents a consolidated SEO report. It uses Nuxt UI, Supabase (RLS), and a Nitro background worker to process analysis jobs.
+This app crawls a site, lets you select pages, and uses AI to convert content to Markdown for Nuxt Content. It preserves the existing styling and auth workflows (Kinde + Supabase), and adds configurable frontmatter, output folders, and local image saving.
 
-Project docs: see docs/analysis-worker.md for the AI worker design and ops details.
+Key features:
+
+- Crawl + select pages (reusing existing workflow)
+- AI conversion to Markdown with configurable frontmatter
+- Save `.md`, optional `.yml` and `.json` sidecars to a chosen `content/` folder
+- Download and rewrite images into a chosen `public/` folder
+- LocalStorage keeps a log of converted pages (shows a "Converted" badge)
+
+Note: This repository is now a standalone content migration tool. The previous SEO audit flow has been removed. A lightweight in‑memory worker queue throttles migration jobs for safe concurrency.
 
 ## Getting Started
 
@@ -36,10 +44,9 @@ yarn install
 bun install
 ```
 
-3) Run database migrations
+3) Run database migrations (optional for quotas)
 
-- Apply the SQL in supabase/migrations to your Supabase project (via Supabase SQL editor or CLI).
-  - Creates `audits`, `audit_pages`, and `analysis_jobs` with RLS and helper functions.
+- Apply the SQL in `supabase/migrations/0001_usage_counters.sql` and `0004_refactor_usage_tokens.sql` if you want daily/monthly quota tracking with Supabase RPC (`fn_usage_add`).
 
 4) Development Server
 
@@ -59,15 +66,23 @@ yarn dev
 bun run dev
 ```
 
-5) Optional: Enable the background analysis worker
+5) Background processing
 
-Set env and run dev or start:
+Set `MIGRATION_WORKER=1` (default) to enable a small in‑memory worker that processes enqueued migration jobs sequentially. Endpoints:
 
-```bash
-ANALYSIS_WORKER=1 WORKER_BATCH=3 WORKER_INTERVAL_MS=3000 npm run dev
-```
+- `POST /api/migrate/enqueue` → `{ jobId }`
+- `GET /api/migrate/jobs/:id/status` → `{ status, results, logs }`
 
-The worker pulls from the queue and processes pages. See docs/analysis-worker.md for tuning and deployment.
+Dev tip: Interval is configurable via `MIGRATION_INTERVAL_MS`.
+
+## Usage (Migration)
+
+1. Visit `/migrate`.
+2. Enter a site URL and start a crawl.
+3. When pages are fetched, select the ones to convert.
+4. Configure content folder, media folder, frontmatter keys, and optional selector/prompt.
+5. Run migration. Files will be written to your project (e.g., `content/...`, `public/images/...`).
+6. Converted pages are tracked in LocalStorage and marked with a badge in the list.
 
 ## Production
 
@@ -107,4 +122,4 @@ Check out the [deployment documentation](https://nuxt.com/docs/getting-started/d
 
 ## Documentation
 
-- AI analysis worker: docs/analysis-worker.md
+- Coming soon: tips for selectors, prompts, and folder strategies

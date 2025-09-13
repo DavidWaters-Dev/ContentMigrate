@@ -10,15 +10,7 @@ export default defineNuxtConfig({
       tailwindcss(),
     ],
   },
-  routeRules: {
-  '/dashboard': {
-    appMiddleware: ['auth-logged-in'],
-    kinde: {
-      redirectUrl: '/api/login',
-      external: true,
-    },
-  }
-},
+  routeRules: {},
 
 supabase: {
     redirect: false, // Disables automatic redirection handling
@@ -27,7 +19,7 @@ supabase: {
   runtimeConfig: {
     openaiApiKey: process.env.OPENAI_API_KEY,
     public: {
-      appName: 'AI SEO Auditor'
+      appName: 'Content Migrator'
     }
   },
 
