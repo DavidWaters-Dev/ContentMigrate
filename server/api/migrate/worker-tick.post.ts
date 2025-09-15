@@ -1,6 +1,10 @@
 import { createSupabaseAdminClient } from '../../utils/supabaseAdmin'
 
 export default defineEventHandler(async (event) => {
+  // Guard: if Supabase env not present, skip silently
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+    return { claimed: 0, processed: 0, note: 'Supabase env missing; worker idle' }
+  }
   const supabase = createSupabaseAdminClient()
   const workerId = process.env.WORKER_ID || `nitro-${process.pid}`
   const batch = Math.max(1, Math.min(10, Number(process.env.MIGRATION_WORKER_BATCH || 3)))

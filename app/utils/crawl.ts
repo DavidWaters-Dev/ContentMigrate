@@ -44,8 +44,11 @@ async function crawlSite (rootUrl: string, opts: { maxPages: number; strategy: '
   const exc = normalizePrefixes(opts.excludePrefixes, origin)
   const allowPath = (p: string) => {
     const lp = (p || '').toLowerCase()
-    const incOk = inc.length ? inc.some(pre => lp.startsWith(pre)) : true
-    const excOk = !exc.some(pre => lp.startsWith(pre))
+    // Include: anchored prefix (e.g., /news only at start)
+    const incOk = inc.length ? inc.some(pre => matchPrefixAnchored(lp, pre)) : true
+    // Exclude: if single segment like /tag or /category, match that segment anywhere in the path;
+    // otherwise, anchored prefix exclusion
+    const excOk = !exc.some(pre => matchExclude(lp, pre))
     return incOk && excOk
   }
   let seeds: string[] = []
@@ -136,10 +139,11 @@ async function crawlSite (rootUrl: string, opts: { maxPages: number; strategy: '
 
 function normalizePrefixes(arr?: string[], origin?: string) {
   const out: string[] = []
+  const seen = new Set<string>()
   for (const v of (arr || [])) {
     let s = String(v || '').trim()
     if (!s) continue
-    // If absolute URL provided, extract pathname
+    // If absolute URL or host/path provided, extract pathname
     try {
       if (/^https?:\/\//i.test(s)) {
         s = new URL(s, origin || undefined).pathname
@@ -147,12 +151,49 @@ function normalizePrefixes(arr?: string[], origin?: string) {
         s = new URL('https://' + s).pathname
       }
     } catch {}
-    // strip trailing wildcards like /* or *
+    // Strip query/hash
+    s = s.split('#')[0].split('?')[0]
+    // Strip trailing wildcards like /* or *
     s = s.replace(/\*$|\/\*$/g, '')
+    // Ensure leading slash
     s = s.startsWith('/') ? s : ('/' + s)
-    out.push(s.toLowerCase())
+    // Normalize multiple slashes
+    s = s.replace(/\/+/g, '/').toLowerCase()
+    // Remove trailing slash except for root
+    if (s.length > 1) s = s.replace(/\/$/, '')
+
+    // Expand common plurals for tag/category convenience
+    const expansions: string[] = [s]
+    if (s === '/tag') expansions.push('/tags')
+    if (s === '/tags') expansions.push('/tag')
+    if (s === '/category') expansions.push('/categories')
+    if (s === '/categories') expansions.push('/category')
+
+    for (const e of expansions) {
+      if (!seen.has(e)) { seen.add(e); out.push(e) }
+    }
   }
   return out
+}
+
+function matchPrefixAnchored(pathLower: string, prefixLower: string) {
+  // Match if path === prefix or starts with prefix + '/'
+  if (prefixLower === '/') return true
+  const p = pathLower.replace(/\/$/, '')
+  const pre = prefixLower.replace(/\/$/, '')
+  return p === pre || p.startsWith(pre + '/')
+}
+
+function matchExclude(pathLower: string, prefixLower: string) {
+  // If prefix is a single segment like '/tag', treat as segment-anywhere exclusion.
+  const pre = prefixLower.replace(/\/$/, '')
+  const seg = pre.startsWith('/') ? pre.slice(1) : pre
+  if (!seg.includes('/')) {
+    const parts = pathLower.replace(/\/$/, '').split('/').filter(Boolean)
+    return parts.includes(seg)
+  }
+  // Otherwise do anchored prefix exclusion
+  return matchPrefixAnchored(pathLower, prefixLower)
 }
 
 function normalizeHost(host: string) {

@@ -335,14 +335,14 @@
 
   async function runMigration() {
     if (!crawlId.value) return
-    if (status.value.fetched.length === 0) {
-      status.value.error = 'No pages fetched. Check crawl logs above.'
-      return
-    }
     try {
       migrating.value = true
       migrationLogs.value = []
       const urls = includedUrls.value.length ? includedUrls.value : Array.from(selectedSet.value)
+      if (urls.length === 0) {
+        status.value.error = 'No pages selected. Use the list above to select URLs, or ensure your crawl discovered URLs (add Include paths as tags and press Enter).'
+        return
+      }
       const res = await $fetch<MigrationResponse>('/api/migrate', {
         method: 'POST',
         body: { crawlId: crawlId.value, includedUrls: urls, options: { clientSave: settings.value.clientSave, output: settings.value.output, selector: settings.value.selector, frontmatter: settings.value.frontmatter, slugStrategy: settings.value.slugStrategy } }

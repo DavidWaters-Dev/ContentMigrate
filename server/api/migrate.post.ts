@@ -177,7 +177,7 @@ export default defineEventHandler(async (event) => {
     logs.push('Client-save mode: returning content + image URLs (no server writes)')
   }
 
-  const pageConcurrency = Math.max(1, Math.min(4, Number(process.env.MIGRATION_PAGE_CONCURRENCY || 2)))
+  const pageConcurrency = Math.max(1, Math.min(4, Number(process.env.MIGRATION_PAGE_CONCURRENCY || 1)))
   for (let i = 0; i < entries.length; i += pageConcurrency) {
     const batch = entries.slice(i, i + pageConcurrency)
     await Promise.all(batch.map(async ([url, html]) => {

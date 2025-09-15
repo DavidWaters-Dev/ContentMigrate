@@ -1,160 +1,87 @@
 <template>
-  <UForm class="space-y-6" @submit.prevent="onSubmit" :state="form">
-    <UCard variant="soft" class="p-4 md:p-6">
-      <!-- Prominent URL input -->
-      <div class="flex items-center gap-2">
-        <div class="relative flex-1">
-          <UInput
-            v-model="form.rootUrl"
-            placeholder="https://example.com"
-            icon="i-lucide-globe"
-            required
-            size="xl"
-            class="w-full"
-          />
-        </div>
-        <UButton
-          type="submit"
-          :disabled="submitting"
-          icon="i-lucide-rocket"
-          size="xl"
-          class="px-6"
-        >
-          Start
-        </UButton>
+  <!-- Sources (Patterns / Manual / CSV) -->
+  <UCard variant="soft" class="p-4 md:p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-semibold">Sources</h3>
+        <p class="text-xs text-[var(--color-foreground-subtle)]">Add patterns, manual URLs or CSV to build a list without deep crawling.</p>
       </div>
-      <p class="text-xs text-[var(--color-foreground-subtle)] mt-2">
-        We'll only crawl within this origin.
-      </p>
+      <div class="flex items-center gap-2">
+        <UButton icon="i-lucide-search" :loading="srcLoading" @click="onPreviewSources">Preview</UButton>
+        <UButton color="neutral" variant="soft" :disabled="srcPreview.length===0" @click="onUseSources">Use now ({{ srcPreview.length }})</UButton>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <UFormField label="Site origin" description="e.g., https://www.example.com">
+        <UInput v-model="src.origin" placeholder="https://www.example.com" size="lg" />
+      </UFormField>
+      <UFormField label="Include patterns" description="/news/*, /blog/* (press Enter)">
+        <UInputTags v-model="src.patterns" placeholder="/news/*, /blog/*" />
+      </UFormField>
+      <UFormField label="Exclude patterns" description="/tag, /category (press Enter)">
+        <UInputTags v-model="src.excludes" placeholder="/tag, /category" />
+      </UFormField>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <UFormField label="Manual URLs" description="One URL per line">
+        <UTextarea v-model="src.manual" :rows="6" placeholder="https://example.com/news/a\nhttps://example.com/news/b" />
+      </UFormField>
+      <UFormField label="CSV import" description="Upload a CSV with one URL per row">
+        <input type="file" accept=".csv,text/csv" @change="onCsv" />
+        <div v-if="src.csvCount" class="text-xs text-[var(--color-foreground-subtle)] mt-2">Loaded {{ src.csvCount }} URLs</div>
+      </UFormField>
+    </div>
+
+    <UCard v-if="srcPreview.length" class="max-h-56 overflow-auto text-sm">
+      <div v-for="u in srcPreview.slice(0, 200)" :key="u" class="truncate">{{ u }}</div>
+      <div v-if="srcPreview.length>200" class="text-xs text-[var(--color-foreground-subtle)] mt-1">+ {{ srcPreview.length - 200 }} more…</div>
     </UCard>
-    <UAccordion
-      class="px-6"
-      :items="[
-        {
-          label: 'Advanced Options',
-          icon: 'i-lucide-settings',
-          defaultOpen: false,
-          slot: 'advanced',
-        },
-      ]"
-      variant="soft"
-    >
-      <template #advanced>
-        <div
-          class="space-y-6 p-4 md:p-6 rounded border border-[var(--color-border)] bg-[var(--color-background-subtle)]"
-        >
-          <!-- First row -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <UFormField
-              label="Strategy"
-              description="Sitemap is safest and reads /sitemap.xml; internal follows links within domain"
-            >
-              <USelect
-                size="lg"
-                v-model="form.strategy"
-                :items="strategies"
-                class="mt-2"
-              />
-            </UFormField>
-            <div class="text-sm text-[var(--color-foreground-subtle)] mt-8">
-              The crawl is polite and bounded by internal safeguards.
-            </div>
-          </div>
-
-          <!-- Second row -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <UFormField
-              label="Concurrency"
-              help="Capped at 2 to avoid overloading servers."
-              description="Controls parallel fetches; server enforces a cap of 2."
-            >
-              <UInput
-                size="lg"
-                class="mt-2"
-                v-model.number="form.concurrency"
-                type="number"
-                min="1"
-                max="2"
-              />
-            </UFormField>
-            <UFormField
-              label="Respect robots.txt"
-              description="Follow robots.txt rules"
-            >
-              <USwitch
-                unchecked-icon="i-lucide-x"
-                checked-icon="i-lucide-check"
-                class="mt-2"
-                size="lg"
-                v-model="form.respectRobots"
-              />
-            </UFormField>
-          </div>
-
-          <!-- Path filters -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <UFormField
-              label="Include paths"
-              description="Only crawl URLs whose path starts with any of these (e.g. /news, /blog) (Press Enter after each entry)"
-            >
-              <UInputTags
-                v-model="form.includePrefixes"
-                placeholder="/news, /blog"
-              />
-            </UFormField>
-            <UFormField
-              label="Exclude paths"
-              description="Skip URLs whose path starts with any of these (e.g. /wp-admin, /tag)"
-            >
-              <UInputTags
-                v-model="form.excludePrefixes"
-                placeholder="/wp-admin, /tag"
-              />
-            </UFormField>
-          </div>
-        </div>
-      </template>
-    </UAccordion>
-  </UForm>
+  </UCard>
 </template>
 
 <script setup lang="ts">
-  const emit = defineEmits(["started"]);
   const store = useAuditStore();
   const submitting = ref(false);
-  const form = reactive({
-    rootUrl: "",
-    strategy: "sitemap+internal",
-    concurrency: 2,
-    respectRobots: true,
-    includePrefixes: [] as string[],
-    excludePrefixes: [] as string[],
-  });
-  const strategies = [
-    { label: "Sitemap only", value: "sitemap-only" },
-    { label: "Sitemap + internal", value: "sitemap+internal" },
-  ];
 
-  async function onSubmit() {
-    submitting.value = true;
-    store.rootUrl.value = form.rootUrl;
-    store.crawlLogs.value = [];
+  // Sources state
+  const src = reactive({ origin: '', patterns: [] as string[], excludes: [] as string[], manual: '', csvCount: 0 })
+  const srcPreview = ref<string[]>([])
+  const srcLoading = ref(false)
+
+  async function onCsv(e: Event) {
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+    const text = await file.text()
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+    src.csvCount = lines.length
+    src.manual = [src.manual, ...lines].filter(Boolean).join('\n')
+  }
+
+  async function onPreviewSources() {
+    srcLoading.value = true
+    srcPreview.value = []
     try {
-      const { crawlId } = await $fetch("/api/crawl", {
-        method: "POST",
-        body: form,
-      });
-      store.crawlId.value = crawlId;
-      store.status.value.running = true;
-      store.status.value.error = "";
-      emit("started", crawlId);
-    } catch (e: any) {
-      store.status.value.error = e.data?.statusMessage || e.message;
-      store.crawlLogs.value.push(
-        `Crawl start error: ${store.status.value.error}`
-      );
+      let urls: string[] = []
+      if (src.origin || src.patterns.length) {
+        const res = await $fetch<{ urls: string[] }>("/api/sources/expand", { method: 'POST', body: { origin: src.origin, patterns: src.patterns, excludes: src.excludes } })
+        urls = res.urls || []
+      }
+      const manual = src.manual.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+      srcPreview.value = Array.from(new Set([...(urls || []), ...manual]))
+    } catch (e:any) {
+      store.status.value.error = e?.data?.statusMessage || e?.message || String(e)
     } finally {
-      submitting.value = false;
+      srcLoading.value = false
     }
+  }
+
+  function onUseSources() {
+    if (!srcPreview.value.length) return
+    store.rootUrl.value = src.origin || store.rootUrl.value
+    store.status.value.discovered = [...srcPreview.value]
+    store.status.value.running = false
   }
 </script>

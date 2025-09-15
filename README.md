@@ -92,6 +92,14 @@ bun run dev
    - `Content/` for Markdown files (`<slug>.md`) and optional `.yml`/`.json`
    - `media/` for images (`media/<slug>/*`)
 6. Converted pages are tracked in LocalStorage and marked with a badge in the list.
+
+## Crawler Behavior
+
+- URL‑only discovery: The crawler collects and normalizes page URLs but does not store full HTML.
+- Deferred fetch: HTML is fetched later during the analysis/migration step for the exact pages you select.
+- Why: keeps memory/CPU low, avoids over‑fetching, and makes large crawls manageable.
+- Filters: Include/Exclude path prefixes are applied to sitemap seeds, per‑URL fetch checks, and internal link enqueue.
+- Same‑host only: Seeds and links are constrained to the root host (www vs apex is normalized).
 7. Visit `/jobs` to view your queued/completed migration jobs and details.
 
 ## Production

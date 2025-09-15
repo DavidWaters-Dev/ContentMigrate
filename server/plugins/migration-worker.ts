@@ -1,5 +1,6 @@
 export default defineNitroPlugin((nitro) => {
-  const enabled = String(process.env.MIGRATION_WORKER || '1').toLowerCase()
+  // Default disabled; enable with MIGRATION_WORKER=1 and proper Supabase env
+  const enabled = String(process.env.MIGRATION_WORKER || '0').toLowerCase()
   if (!(enabled === '1' || enabled === 'true' || enabled === 'yes')) return
 
   const intervalMs = Math.max(1000, Number(process.env.MIGRATION_INTERVAL_MS || 3000))

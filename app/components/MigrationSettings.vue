@@ -1,13 +1,6 @@
 <template>
   <UCard class="space-y-5" variant="soft">
-    <UFormField label="Save method" description="Prefer saving with browser folder picker for direct-to-disk writes">
-      <div class="flex items-center gap-3">
-        <USwitch v-model="s.clientSave" />
-        <span class="text-sm">Save with browser file picker</span>
-        <UButton v-if="s.clientSave" size="sm" icon="i-lucide-folder-open" @click="chooseFolder">Choose folder</UButton>
-        <span v-if="folderName" class="text-xs text-[var(--color-foreground-subtle)]">{{ folderName }}</span>
-      </div>
-    </UFormField>
+    <UAlert color="neutral" variant="soft" icon="i-lucide-info" title="Output location" :description="'Files are saved to your Downloads/contentmigrate folder under Content/ and media/." />
     
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -39,20 +32,7 @@
       </div>
     </UFormField>
 
-    <UFormField label="Images" description="Control browser-side image downloads">
-      <div class="flex items-center gap-4 flex-wrap">
-        <USwitch v-model="s.downloadImages" />
-        <span class="text-sm">Download images</span>
-        <div class="flex items-center gap-2">
-          <UInput v-model.number="s.maxImagesPerPage" type="number" min="1" class="w-24" />
-          <span class="text-xs text-[var(--color-foreground-subtle)]">Max images/page</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <UInput v-model.number="s.maxImageMB" type="number" min="1" class="w-24" />
-          <span class="text-xs text-[var(--color-foreground-subtle)]">Max MB/image</span>
-        </div>
-      </div>
-    </UFormField>
+    <!-- Image downloads are handled server-side; no additional settings required. -->
 
     <UFormField label="Extra prompt context" description="Optional guidance to tailor extraction">
       <UTextarea v-model="s.additionalPrompt" :rows="4" placeholder="Only migrate the main <article> content..." />
@@ -63,8 +43,6 @@
 <script setup lang="ts">
   const migrate = useMigrateStore()
   const s = migrate.settings.value
-  const folderHandle = ref<FileSystemDirectoryHandle | null>(null)
-  const folderName = computed(() => folderHandle.value ? (folderHandle.value as any).name : '')
   const frontmatterTags = computed<string[]>({
     get: () => (s.frontmatter || []).map(f => f.key),
     set: (arr: string[]) => {
@@ -76,13 +54,5 @@
       s.frontmatter = keys.map(k => ({ key: k }))
     }
   })
-  async function chooseFolder() {
-    try {
-      // @ts-ignore
-      const handle: FileSystemDirectoryHandle = await (window as any).showDirectoryPicker()
-      try { await (handle as any).requestPermission?.({ mode: 'readwrite' }) } catch {}
-      folderHandle.value = handle
-      ;(window as any).__contentMigrateDirHandle = handle
-    } catch {}
-  }
+  // No client-side folder picker; server writes to Downloads/contentmigrate
 </script>
