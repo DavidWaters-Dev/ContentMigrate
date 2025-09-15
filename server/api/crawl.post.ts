@@ -10,9 +10,8 @@ export default defineEventHandler(async (event) => {
   const usage = await addUsage(event, 'crawl_pages', 0, DAILY_CRAWL_PAGES_LIMIT, 'day')
   const remainingPages = usage?.remaining ?? 0
 
-  // Clamp request to remaining allowance and safety bounds
-  const requestedMax = Math.min(body.maxPages || 50, 200)
-  const maxPages = Math.max(0, Math.min(requestedMax, remainingPages))
+  // No explicit max pages; rely on internal safety and quotas
+  const maxPages = Math.max(0, remainingPages || 1000000)
   if (maxPages === 0) {
     throw createError({ statusCode: 429, statusMessage: 'Daily crawl pages limit reached' })
   }
@@ -25,8 +24,8 @@ export default defineEventHandler(async (event) => {
   const includePrefixes = Array.isArray(body.includePrefixes) ? body.includePrefixes : []
   const excludePrefixes = Array.isArray(body.excludePrefixes) ? body.excludePrefixes : []
 
-  console.log(`[Crawl] Starting`, body.rootUrl, { maxPages, strategy, concurrency, respectRobots, delayMs })
+  console.log(`[Crawl] Starting`, body.rootUrl, { maxPages, strategy, concurrency, respectRobots, delayMs, includePrefixes, excludePrefixes })
   const crawlId = await startCrawl(body.rootUrl, { maxPages, strategy, concurrency, respectRobots, delayMs, includePrefixes, excludePrefixes })
   console.log(`[Crawl] Started id=${crawlId}`)
-  return { crawlId, plannedPages: maxPages }
+  return { crawlId }
 })

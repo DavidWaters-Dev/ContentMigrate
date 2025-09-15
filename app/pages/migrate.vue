@@ -208,7 +208,7 @@
     }
   }
 
-  const crawlDone = computed(() => !status.value.running && status.value.fetched.length > 0)
+  const crawlDone = computed(() => !status.value.running && status.value.discovered.length > 0)
   const step = computed<'start' | 'select' | 'migrating'>(() => {
     if (migrating.value) return 'migrating'
     if (crawlDone.value) return 'select'
@@ -217,11 +217,11 @@
 
   const includedUrls = ref<string[]>([])
   const includedSet = computed(() => new Set(includedUrls.value))
-  const urlsForSelection = computed(() => status.value.fetched as string[])
+  const urlsForSelection = computed(() => status.value.discovered as string[])
   const allSelected = computed(() => urlsForSelection.value.length > 0 && includedUrls.value.length === urlsForSelection.value.length)
 
   watch(crawlDone, (done) => {
-    if (done) includedUrls.value = [...status.value.fetched]
+    if (done) includedUrls.value = [...status.value.discovered]
     else if (!status.value.running) includedUrls.value = []
   })
 

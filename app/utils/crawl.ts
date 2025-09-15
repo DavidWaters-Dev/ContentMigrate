@@ -79,7 +79,7 @@ async function crawlSite (rootUrl: string, opts: { maxPages: number; strategy: '
     }
   }
   const queue: string[] = [...seeds]
-  while (queue.length && job.fetched.size < opts.maxPages) {
+  while (queue.length) {
     const urls = queue.splice(0, opts.concurrency)
     await Promise.all(urls.map(async (url) => {
       if (job.discovered.has(url)) return
@@ -115,14 +115,13 @@ async function crawlSite (rootUrl: string, opts: { maxPages: number; strategy: '
           return
         }
         const html = await res.text()
-        job.fetched.set(url, html)
         job.logs.push(`[Crawl] Fetched: ${url} (len ${html.length})`)
         if (opts.strategy === 'sitemap+internal') {
           const links = extractLinks(html, url)
           job.logs.push(`[Crawl] Extracted ${links.length} links from ${url}`)
           for (const l of links) {
             const u = new URL(l, origin).href
-            if (u.startsWith(origin) && !job.discovered.has(u) && job.fetched.size + queue.length < opts.maxPages) {
+            if (u.startsWith(origin) && !job.discovered.has(u)) {
               try { const p = new URL(u).pathname; if (!allowPath(p)) continue } catch {}
               queue.push(u)
             }
