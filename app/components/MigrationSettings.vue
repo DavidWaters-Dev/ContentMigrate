@@ -28,6 +28,7 @@
         <UCheckbox v-model="s.output.md" label="Markdown (.md)" />
         <UCheckbox v-model="s.output.yml" label="YAML (.yml)" />
         <UCheckbox v-model="s.output.json" label="JSON (.json)" />
+        <UCheckbox v-model="s.output.csv" label="CSV (index.csv)" />
       </div>
       <p class="text-xs text-[var(--color-foreground-subtle)] mt-1">Outputs are written to your Downloads/contentmigrate folder under <code>Content/</code> and <code>media/</code>.</p>
     </UFormField>

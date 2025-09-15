@@ -20,7 +20,7 @@ export const useMigrateStore = () => {
     ] as FrontmatterField[],
     additionalPrompt: '',
     selector: 'article',
-    output: { md: true, yml: true, json: true } as OutputFormats,
+    output: { md: true, yml: true, json: true, csv: false } as OutputFormats,
     slugStrategy: 'path' as 'path' | 'title'
   }))
 

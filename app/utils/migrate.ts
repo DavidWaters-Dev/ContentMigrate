@@ -5,14 +5,28 @@ const systemPrompt = `You are a precise content migration assistant.
 Convert selected HTML into high-quality Markdown for a Nuxt Content site.
 Rules:
 - Use only the provided selected_content for the body_markdown.
-- You MAY use page_meta (og tags, json-ld, dates, featured images, video urls) to populate frontmatter fields.
+- Use page_meta (og tags, json-ld, dates, featured images, video urls, meta title/description) to populate frontmatter fields.
+- You are given frontmatter_keys and frontmatter_hints describing intent (e.g., date=publish date; image=featured image; youtubeID=YouTube video id). Populate these keys when possible.
 - Preserve headings hierarchy (h1..h3), lists, links, and quotes.
 - Convert tables into Markdown tables when feasible.
 - Do NOT include any CSS or inline styles.
-- Extract and fill only the requested frontmatter keys when possible.
-- Include a concise, meaningful title if requested.
 - Return only JSON with: { frontmatter: object, body_markdown: string, suggested_slug: string, image_urls: string[] }.
-- body_markdown must NOT include frontmatter fences.`
+- body_markdown must NOT include frontmatter fences.
+- Only include keys in frontmatter that appear in frontmatter_keys.`
+
+function buildFrontmatterHints(keys: string[]) {
+  const out: Record<string, string> = {}
+  for (const k of keys) {
+    const lk = k.toLowerCase()
+    if (/(^|_)date|published/.test(lk)) out[k] = 'Publish date in ISO if possible'
+    else if (/youtube/.test(lk)) out[k] = 'YouTube video ID (not full URL)'
+    else if (/image|mainimage|featured/.test(lk)) out[k] = 'Featured image URL'
+    else if (/title|name/.test(lk)) out[k] = 'Concise content title'
+    else if (/description|summary/.test(lk)) out[k] = 'Short description/summary'
+    else out[k] = 'Populate if relevant from selected content or page meta'
+  }
+  return out
+}
 
 export async function aiConvertToMarkdown(html: string, url: string, options: MigrationOptions, pageMeta?: any) {
   const config = useRuntimeConfig()
@@ -37,7 +51,14 @@ export async function aiConvertToMarkdown(html: string, url: string, options: Mi
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: JSON.stringify({ url, selected_content: html, page_meta: pageMeta || {}, frontmatter: fmKeys, prompt: options.additionalPrompt || '' }) }
+        { role: 'user', content: JSON.stringify({
+          url,
+          selected_content: html,
+          page_meta: pageMeta || {},
+          frontmatter_keys: fmKeys,
+          frontmatter_hints: buildFrontmatterHints(fmKeys),
+          prompt: options.additionalPrompt || ''
+        }) }
       ]
     })
   })

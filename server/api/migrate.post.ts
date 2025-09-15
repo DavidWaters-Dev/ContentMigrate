@@ -112,6 +112,7 @@ export default defineEventHandler(async (event) => {
 
   const logs: string[] = []
   const results: MigrationPageResult[] = []
+  const csvRows: any[] = []
 
   const includeSet = new Set((body.includedUrls || []).filter(Boolean))
   const entries: Array<[string, string]> = []
@@ -200,7 +201,8 @@ export default defineEventHandler(async (event) => {
         // Compose frontmatter
         const fmDefaults = Object.fromEntries((options.frontmatter || []).map(f => [f.key, f.default]))
         const fmFromAi = (ai.frontmatter || {}) as any
-        const fm: any = mergeFrontmatter(options.frontmatter?.map(f => f.key) || [], fmDefaults, fmFromAi, pageMeta, url)
+        const fmKeys = options.frontmatter?.map(f => f.key) || []
+        const fm: any = mergeFrontmatter(fmKeys, fmDefaults, fmFromAi, pageMeta, url)
 
         // Write files
         await fsp.mkdir(contentRoot, { recursive: true })
@@ -250,6 +252,12 @@ export default defineEventHandler(async (event) => {
 
         const took = Date.now() - start
         rlogs.push(`Wrote files in ${took}ms`)
+        // Collect CSV row if requested
+        if (options.output?.csv) {
+          const row: any = { slug, url }
+          for (const k of fmKeys) row[k] = fm[k] ?? ''
+          csvRows.push(row)
+        }
         results.push({ url, slug, mdPath, ymlPath: options.output?.yml ? ymlPath : undefined, jsonPath: options.output?.json ? jsonPath : undefined, imagesSaved, status: 'ok', logs: rlogs })
       } catch (e: any) {
         rlogs.push(`Error: ${e?.message || e}`)
@@ -259,6 +267,28 @@ export default defineEventHandler(async (event) => {
   }
 
   const response: MigrationResponse = { results, logs }
+  // Write CSV if requested
+  try {
+    const anyOk = results.some(r => r.status === 'ok')
+    if (anyOk && (body.options?.output?.csv)) {
+      const fmKeys = (body.options?.frontmatter || []).map((f: any) => f.key)
+      const header = ['slug', 'url', ...fmKeys]
+      const lines: string[] = []
+      const esc = (v: string) => /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v
+      lines.push(header.join(','))
+      for (const r of csvRows) {
+        const vals = header.map(h => String((r as any)[h] ?? '').replace(/\r?\n/g, ' ').trim())
+        lines.push(vals.map(esc).join(','))
+      }
+      const csv = lines.join('\n')
+      const baseRoot = path.join(os.homedir(), 'Downloads', process.env.MIGRATE_DOWNLOAD_SUBFOLDER || 'contentmigrate')
+      const contentRoot = path.join(baseRoot, 'Content')
+      await fsp.mkdir(contentRoot, { recursive: true })
+      await fsp.writeFile(path.join(contentRoot, 'index.csv'), csv, 'utf8')
+    }
+  } catch (e) {
+    console.warn('[Migrate] CSV write failed:', (e as any)?.message || e)
+  }
   try {
     const ok = results.filter(r => r.status === 'ok').length
     const err = results.filter(r => r.status === 'error').length

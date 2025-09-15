@@ -7,6 +7,7 @@ export type OutputFormats = {
   md: boolean
   yml: boolean
   json: boolean
+  csv?: boolean
 }
 
 export type MigrationOptions = {
