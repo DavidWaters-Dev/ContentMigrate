@@ -2,7 +2,7 @@ import { crawlJobs } from '~/utils/crawl'
 import { pickContentBySelector, aiConvertToMarkdown, slugifyFromUrlOrTitle, toYAML } from '~/utils/migrate'
 import type { MigrationOptions, MigrationResponse, MigrationPageResult } from '~/types/migrate'
 import { addUsage } from '../utils/usage'
-import cheerio from 'cheerio'
+import { load as loadCheerio } from 'cheerio'
 import { promises as fsp } from 'node:fs'
 import path from 'node:path'
 
@@ -90,8 +90,8 @@ export default defineEventHandler(async (event) => {
       }
       try {
         rlogs.push(`Selecting content for ${url}`)
-        const selectedHtml = pickContentBySelector(html, options.selector)
-        const $ = cheerio.load(selectedHtml)
+      const selectedHtml = pickContentBySelector(html, options.selector)
+      const $ = loadCheerio(selectedHtml)
         const htmlImages = $('img').map((_, el) => $(el).attr('src') || '').get().filter(Boolean)
         rlogs.push(`Found ${htmlImages.length} images in HTML`)
 

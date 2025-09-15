@@ -1,6 +1,5 @@
 import type { MigrationOptions } from '~/types/migrate'
-import cheerio from 'cheerio'
-import { slugify } from '~/server/utils/slug'
+import { load as loadCheerio } from 'cheerio'
 
 const systemPrompt = `You are a precise content migration assistant.
 Convert provided HTML into high-quality Markdown for a Nuxt Content site.
@@ -66,7 +65,7 @@ export async function aiConvertToMarkdown(html: string, url: string, options: Mi
 export function pickContentBySelector(html: string, selector?: string) {
   if (!selector) return html
   try {
-    const $ = cheerio.load(html)
+    const $ = loadCheerio(html)
     const el = $(selector)
     if (!el.length) return html
     return el.first().html() || html
@@ -120,3 +119,11 @@ export function toYAML(obj: Record<string, any>, indent = ''): string {
   return lines.join('\n')
 }
 
+function slugify(input: string, max = 64) {
+  return (input || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, max) || 'content'
+}

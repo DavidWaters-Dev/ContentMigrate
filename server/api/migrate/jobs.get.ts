@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '../../utils/supabaseServer'
+import { createSupabaseServerClient } from '~~/server/utils/supabaseServer'
 
 export default defineEventHandler(async (event) => {
   const supabase = await createSupabaseServerClient(event)
@@ -34,4 +34,3 @@ export default defineEventHandler(async (event) => {
   })
   return { jobs: rows }
 })
-

@@ -1,5 +1,5 @@
 import { addUsage } from '../../utils/usage'
-import { createSupabaseServerClient } from '../../utils/supabaseServer'
+import { createSupabaseServerClient } from '~~/server/utils/supabaseServer'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ crawlId: string, includedUrls?: string[], options?: any }>(event)

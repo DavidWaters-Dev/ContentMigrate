@@ -23,9 +23,8 @@
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <UButton to="/migrate" color="primary" variant="ghost">
-            Start Migration
-          </UButton>
+          <UButton to="/migrate" color="primary" variant="ghost">Start Migration</UButton>
+          <UButton to="/jobs" color="neutral" variant="ghost">Jobs</UButton>
           <UButton
             variant="ghost"
             color="neutral"

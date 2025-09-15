@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '../../../../utils/supabaseServer'
+import { createSupabaseServerClient } from '~~/server/utils/supabaseServer'
 
 export default defineEventHandler(async (event) => {
   const id = event.context.params?.id as string

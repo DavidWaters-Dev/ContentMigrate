@@ -5,7 +5,10 @@
         <h1 class="text-2xl font-semibold">Job {{ shortId(id) }}</h1>
         <p class="text-sm text-[var(--color-foreground-subtle)]">Status: <span class="font-medium">{{ status?.status }}</span></p>
       </div>
-      <UButton icon="i-lucide-rotate-cw" color="neutral" @click="refresh" :loading="loading">Refresh</UButton>
+      <div class="flex items-center gap-2">
+        <UButton v-if="status?.status==='queued'" icon="i-lucide-square" color="error" variant="soft" @click="cancel" :loading="loading">Cancel</UButton>
+        <UButton icon="i-lucide-rotate-cw" color="neutral" @click="refresh" :loading="loading">Refresh</UButton>
+      </div>
     </div>
 
     <UCard>
@@ -77,6 +80,15 @@
     }
   }
 
+  async function cancel() {
+    loading.value = true
+    try {
+      await $fetch(`/api/migrate/jobs/${id}`, { method: 'PATCH', body: { action: 'cancel' } })
+      await refresh()
+    } finally {
+      loading.value = false
+    }
+  }
+
   onMounted(refresh)
 </script>
-
