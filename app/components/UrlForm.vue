@@ -40,7 +40,9 @@
       variant="soft"
     >
       <template #advanced>
-        <div class="space-y-6 p-4 md:p-6 rounded border border-[var(--color-border)] bg-[var(--color-background-subtle)]">
+        <div
+          class="space-y-6 p-4 md:p-6 rounded border border-[var(--color-border)] bg-[var(--color-background-subtle)]"
+        >
           <!-- First row -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <UFormField
@@ -93,15 +95,21 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <UFormField
               label="Include paths"
-              description="Only crawl URLs whose path starts with any of these (e.g. /news, /blog)"
+              description="Only crawl URLs whose path starts with any of these (e.g. /news, /blog) (Press Enter after each entry)"
             >
-              <UInputTags v-model="form.includePrefixes" placeholder="/news, /blog" />
+              <UInputTags
+                v-model="form.includePrefixes"
+                placeholder="/news, /blog"
+              />
             </UFormField>
             <UFormField
               label="Exclude paths"
               description="Skip URLs whose path starts with any of these (e.g. /wp-admin, /tag)"
             >
-              <UInputTags v-model="form.excludePrefixes" placeholder="/wp-admin, /tag" />
+              <UInputTags
+                v-model="form.excludePrefixes"
+                placeholder="/wp-admin, /tag"
+              />
             </UFormField>
           </div>
         </div>

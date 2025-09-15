@@ -12,6 +12,9 @@ type ConvertedRecord = {
 export const useMigrateStore = () => {
   const settings = useState('migrate_settings', () => ({
     clientSave: true,
+    downloadImages: true,
+    maxImagesPerPage: 20,
+    maxImageMB: 8,
     frontmatter: [
       { key: 'title' },
       { key: 'date' },

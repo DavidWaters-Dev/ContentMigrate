@@ -145,7 +145,8 @@ export default defineEventHandler(async (event) => {
     additionalPrompt: body.options?.additionalPrompt || '',
     selector: body.options?.selector || '',
     output: body.options?.output || { md: true, yml: true, json: true },
-    slugStrategy: body.options?.slugStrategy || 'path'
+    slugStrategy: body.options?.slugStrategy || 'path',
+    clientSave: Boolean((body as any)?.options?.clientSave)
   }
 
   // Enforce a daily pages migrated limit
@@ -164,13 +165,17 @@ export default defineEventHandler(async (event) => {
   logs.push(`Starting migration for ${entries.length} pages`)
   console.log(`[Migrate] Starting migration for`, entries.length, 'pages')
 
-  // Always save to ~/Downloads/contentmigrate with md/ and media/ subfolders
+  // Default server-save paths (used only when clientSave is false)
   const baseRoot = path.join(os.homedir(), 'Downloads', process.env.MIGRATE_DOWNLOAD_SUBFOLDER || 'contentmigrate')
   const contentRoot = path.join(baseRoot, 'Content')
   const mediaRoot = path.join(baseRoot, 'media')
-  await fsp.mkdir(contentRoot, { recursive: true })
-  await fsp.mkdir(mediaRoot, { recursive: true })
-  logs.push(`Writing to ${contentRoot} and ${mediaRoot}`)
+  if (!options.clientSave) {
+    await fsp.mkdir(contentRoot, { recursive: true })
+    await fsp.mkdir(mediaRoot, { recursive: true })
+    logs.push(`Writing to ${contentRoot} and ${mediaRoot}`)
+  } else {
+    logs.push('Client-save mode: returning content + image URLs (no server writes)')
+  }
 
   const pageConcurrency = Math.max(1, Math.min(4, Number(process.env.MIGRATION_PAGE_CONCURRENCY || 2)))
   for (let i = 0; i < entries.length; i += pageConcurrency) {
@@ -201,18 +206,31 @@ export default defineEventHandler(async (event) => {
         pageMeta.featuredImage || ''
       ].filter(Boolean).map((u: string) => new URL(u, url).href)))
 
-        // Create media directory for this page
-        const pageMediaAbs = path.join(mediaRoot, slug)
+        // Prepare or download images
         let imagesSaved = 0
-        const savedImages: Array<{ orig: string, file: string, name: string }> = []
-        for (const img of allImageUrls) {
-          const saved = await downloadImageTo(img, pageMediaAbs)
-          if (saved) {
-            imagesSaved++
-            savedImages.push({ orig: img, file: saved.absPath, name: saved.publicPath })
+        const savedImages: Array<{ orig: string, file?: string, name: string, url: string }> = []
+        if (options.clientSave) {
+          for (const img of allImageUrls) {
+            try {
+              const u = new URL(img)
+              let name = path.basename(u.pathname) || 'image.jpg'
+              if (!/\.[a-z0-9]{2,5}$/i.test(name)) name += '.jpg'
+              savedImages.push({ orig: img, name, url: new URL(img, url).href })
+              imagesSaved++
+            } catch {}
           }
+          rlogs.push(`Prepared ${imagesSaved} images for client save`)
+        } else {
+          const pageMediaAbs = path.join(mediaRoot, slug)
+          for (const img of allImageUrls) {
+            const saved = await downloadImageTo(img, pageMediaAbs)
+            if (saved) {
+              imagesSaved++
+              savedImages.push({ orig: img, file: saved.absPath, name: saved.publicPath, url: new URL(img, url).href })
+            }
+          }
+          rlogs.push(`Saved ${imagesSaved} images to ${pageMediaAbs}`)
         }
-        rlogs.push(`Saved ${imagesSaved} images to ${pageMediaAbs}`)
 
         // Compose frontmatter
         const fmDefaults = Object.fromEntries((options.frontmatter || []).map(f => [f.key, f.default]))
@@ -225,11 +243,10 @@ export default defineEventHandler(async (event) => {
         const mdPath = path.join(contentRoot, `${slug}.md`)
         const ymlPath = path.join(contentRoot, `${slug}.yml`)
         const jsonPath = path.join(contentRoot, `${slug}.json`)
-        // Determine how to reference images in Markdown relative to md/
+        // Determine how to reference images in Markdown relative to Content/
         const replacements = new Map<string, string>()
         for (const si of savedImages) {
-          const target = path.join(mediaRoot, slug, si.name)
-          const rel = path.relative(path.dirname(mdPath), target).replace(/\\/g, '/')
+          const rel = `../media/${slug}/${si.name}`
           replacements.set(si.orig, rel)
         }
 
@@ -250,15 +267,18 @@ export default defineEventHandler(async (event) => {
         if (options.output?.md !== false) {
           const yaml = toYAML(fm)
           const content = `---\n${yaml}\n---\n\n${md}`
-          await fsp.writeFile(mdPath, content, 'utf8')
+          if (!options.clientSave) await fsp.writeFile(mdPath, content, 'utf8')
+          else mdContent = content
         }
         if (options.output?.yml) {
           const yaml = toYAML(fm)
-          await fsp.writeFile(ymlPath, `${yaml}\n`, 'utf8')
+          if (!options.clientSave) await fsp.writeFile(ymlPath, `${yaml}\n`, 'utf8')
+          else ymlContent = `${yaml}\n`
         }
         if (options.output?.json) {
           const payload = JSON.stringify({ frontmatter: fm, markdown: md, url }, null, 2)
-          await fsp.writeFile(jsonPath, payload, 'utf8')
+          if (!options.clientSave) await fsp.writeFile(jsonPath, payload, 'utf8')
+          else jsonContent = payload
         }
 
         // Increment usage per successful page
@@ -267,14 +287,29 @@ export default defineEventHandler(async (event) => {
         }
 
         const took = Date.now() - start
-        rlogs.push(`Wrote files in ${took}ms`)
+        rlogs.push(options.clientSave ? `Prepared files in ${took}ms` : `Wrote files in ${took}ms`)
         // Collect CSV row if requested
         if (options.output?.csv) {
           const row: any = { slug, url }
           for (const k of fmKeys) row[k] = fm[k] ?? ''
           csvRows.push(row)
         }
-        results.push({ url, slug, mdPath, ymlPath: options.output?.yml ? ymlPath : undefined, jsonPath: options.output?.json ? jsonPath : undefined, imagesSaved, status: 'ok', logs: rlogs })
+        results.push({
+          url,
+          slug,
+          mdPath: options.clientSave ? undefined : mdPath,
+          ymlPath: options.clientSave ? undefined : (options.output?.yml ? ymlPath : undefined),
+          jsonPath: options.clientSave ? undefined : (options.output?.json ? jsonPath : undefined),
+          imagesSaved,
+          status: 'ok',
+          logs: rlogs,
+          ...(options.clientSave ? {
+            mdContent,
+            ymlContent,
+            jsonContent,
+            images: savedImages.map(si => ({ name: si.name, url: si.url }))
+          } : {})
+        } as any)
       } catch (e: any) {
         rlogs.push(`Error: ${e?.message || e}`)
         results.push({ url, slug: '', imagesSaved: 0, status: 'error', error: e?.message || String(e), logs: rlogs })
