@@ -2,19 +2,19 @@ import type { MigrationOptions } from '~/types/migrate'
 import { load as loadCheerio } from 'cheerio'
 
 const systemPrompt = `You are a precise content migration assistant.
-Convert provided HTML into high-quality Markdown for a Nuxt Content site.
+Convert selected HTML into high-quality Markdown for a Nuxt Content site.
 Rules:
-- Extract main article content only; ignore navigation, footer, ads.
+- Use only the provided selected_content for the body_markdown.
+- You MAY use page_meta (og tags, json-ld, dates, featured images, video urls) to populate frontmatter fields.
 - Preserve headings hierarchy (h1..h3), lists, links, and quotes.
 - Convert tables into Markdown tables when feasible.
 - Do NOT include any CSS or inline styles.
-- Extract frontmatter fields requested by the user based on page content.
-- Include a concise, meaningful title.
+- Extract and fill only the requested frontmatter keys when possible.
+- Include a concise, meaningful title if requested.
 - Return only JSON with: { frontmatter: object, body_markdown: string, suggested_slug: string, image_urls: string[] }.
-- body_markdown must NOT include frontmatter fences.
-`
+- body_markdown must NOT include frontmatter fences.`
 
-export async function aiConvertToMarkdown(html: string, url: string, options: MigrationOptions) {
+export async function aiConvertToMarkdown(html: string, url: string, options: MigrationOptions, pageMeta?: any) {
   const config = useRuntimeConfig()
   if (!config.openaiApiKey) throw new Error('Missing OPENAI_API_KEY')
 
@@ -37,7 +37,7 @@ export async function aiConvertToMarkdown(html: string, url: string, options: Mi
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: JSON.stringify({ url, html, frontmatter: fmKeys, prompt: options.additionalPrompt || '' }) }
+        { role: 'user', content: JSON.stringify({ url, selected_content: html, page_meta: pageMeta || {}, frontmatter: fmKeys, prompt: options.additionalPrompt || '' }) }
       ]
     })
   })

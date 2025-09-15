@@ -88,8 +88,8 @@ bun run dev
 2. Enter a site URL and start a crawl.
 3. When pages are fetched, select the ones to convert.
 4. Enable “Save with browser file picker” and click “Choose folder” (e.g., `/Users/you/Downloads/migration`).
-5. Run migration, then click “Save to chosen folder”. The app creates two folders inside your chosen directory:
-   - `md/` for Markdown files (`<slug>.md`)
+5. Run migration. Files are written to your Downloads folder under `contentmigrate/`:
+   - `Content/` for Markdown files (`<slug>.md`) and optional `.yml`/`.json`
    - `media/` for images (`media/<slug>/*`)
 6. Converted pages are tracked in LocalStorage and marked with a badge in the list.
 7. Visit `/jobs` to view your queued/completed migration jobs and details.

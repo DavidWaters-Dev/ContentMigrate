@@ -15,6 +15,79 @@ function resolveTarget(root: string, p: string) {
   return joined
 }
 
+function extractPageMeta(html: string, url: string) {
+  const $ = loadCheerio(html)
+  const meta: any = { images: [], videoUrls: [] }
+  // og:image, twitter:image
+  const ogImg = $('meta[property="og:image"]').attr('content') || $('meta[name="og:image"]').attr('content')
+  const twImg = $('meta[name="twitter:image"]').attr('content')
+  if (ogImg) meta.featuredImage = new URL(ogImg, url).href
+  if (twImg && !meta.featuredImage) meta.featuredImage = new URL(twImg, url).href
+  $('img[src]').each((_, el) => {
+    const src = $(el).attr('src')
+    if (src) meta.images.push(new URL(src, url).href)
+  })
+  // published date
+  const artPub = $('meta[property="article:published_time"]').attr('content')
+  if (artPub) meta.datePublished = artPub
+  // JSON-LD
+  $('script[type="application/ld+json"]').each((_, el) => {
+    try {
+      const data = JSON.parse($(el).text())
+      const arr = Array.isArray(data) ? data : [data]
+      for (const node of arr) {
+        if (node?.datePublished && !meta.datePublished) meta.datePublished = node.datePublished
+        if (node?.image) {
+          const imgs = Array.isArray(node.image) ? node.image : [node.image]
+          for (const i of imgs) if (typeof i === 'string') meta.images.push(new URL(i, url).href)
+        }
+        if (node?.embedUrl) meta.videoUrls.push(new URL(node.embedUrl, url).href)
+      }
+    } catch {}
+  })
+  // og:video, iframes
+  const ogVid = $('meta[property="og:video"]').attr('content')
+  if (ogVid) meta.videoUrls.push(new URL(ogVid, url).href)
+  $('iframe[src]').each((_, el) => {
+    const src = $(el).attr('src')
+    if (src) meta.videoUrls.push(new URL(src, url).href)
+  })
+  meta.images = Array.from(new Set(meta.images))
+  meta.videoUrls = Array.from(new Set(meta.videoUrls))
+  return meta
+}
+
+function mergeFrontmatter(keys: string[], defaults: any, fromAi: any, meta: any, url: string) {
+  const out: any = {}
+  const take = (k: string, v: any) => { if (k && v != null && v !== '') out[k] = v }
+  const dateNorm = (s?: string) => {
+    if (!s) return undefined
+    const d = new Date(s)
+    if (isNaN(d.getTime())) return s
+    return d.toISOString()
+  }
+  // Try to derive youtubeID from first video URL
+  const yt = (meta?.videoUrls || []).find((u: string) => /youtube\.com|youtu\.be/.test(u || ''))
+  const ytId = yt ? (yt.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{6,})/)?.[1] || undefined) : undefined
+
+  for (const k of keys) {
+    const lk = k.toLowerCase()
+    let v = fromAi[k]
+    if (v == null) v = defaults[k]
+    if ((v == null || v === '') && (lk === 'date' || lk === 'published' || lk === 'datepublished')) {
+      v = dateNorm(meta?.datePublished)
+    }
+    if ((v == null || v === '') && (lk === 'image' || lk === 'mainimage' || lk === 'featuredimage')) {
+      v = meta?.featuredImage || (Array.isArray(meta?.images) ? meta.images[0] : undefined)
+    }
+    if ((v == null || v === '') && (lk === 'youtubeid' || lk === 'youtube')) {
+      v = ytId
+    }
+    take(k, v)
+  }
+  return out
+}
+
 async function downloadImageTo(url: string, absDir: string): Promise<{ absPath: string, publicPath: string } | null> {
   try {
     await fsp.mkdir(absDir, { recursive: true })
@@ -76,7 +149,7 @@ export default defineEventHandler(async (event) => {
 
   // Always save to ~/Downloads/contentmigrate with md/ and media/ subfolders
   const baseRoot = path.join(os.homedir(), 'Downloads', process.env.MIGRATE_DOWNLOAD_SUBFOLDER || 'contentmigrate')
-  const contentRoot = path.join(baseRoot, 'md')
+  const contentRoot = path.join(baseRoot, 'Content')
   const mediaRoot = path.join(baseRoot, 'media')
   await fsp.mkdir(contentRoot, { recursive: true })
   await fsp.mkdir(mediaRoot, { recursive: true })
@@ -96,14 +169,20 @@ export default defineEventHandler(async (event) => {
         rlogs.push(`Selecting content for ${url}`)
       const selectedHtml = pickContentBySelector(html, options.selector)
       const $ = loadCheerio(selectedHtml)
+      const pageMeta = extractPageMeta(html, url)
         const htmlImages = $('img').map((_, el) => $(el).attr('src') || '').get().filter(Boolean)
         rlogs.push(`Found ${htmlImages.length} images in HTML`)
 
-        const ai = await aiConvertToMarkdown(selectedHtml, url, options)
+      const ai = await aiConvertToMarkdown(selectedHtml, url, options, pageMeta)
         const slug = ai.slug || slugifyFromUrlOrTitle(url, ai.frontmatter?.title)
         rlogs.push(`AI suggested slug: ${slug}`)
         // Merge image urls (from AI and HTML)
-        const allImageUrls = Array.from(new Set([...(ai.imageUrls || []), ...htmlImages].map((u) => new URL(u, url).href)))
+      const allImageUrls = Array.from(new Set([
+        ...(ai.imageUrls || []),
+        ...htmlImages,
+        ...(pageMeta.images || []),
+        pageMeta.featuredImage || ''
+      ].filter(Boolean).map((u: string) => new URL(u, url).href)))
 
         // Create media directory for this page
         const pageMediaAbs = path.join(mediaRoot, slug)
@@ -120,7 +199,8 @@ export default defineEventHandler(async (event) => {
 
         // Compose frontmatter
         const fmDefaults = Object.fromEntries((options.frontmatter || []).map(f => [f.key, f.default]))
-        const fm: any = { ...fmDefaults, ...(ai.frontmatter || {}), sourceUrl: url }
+        const fmFromAi = (ai.frontmatter || {}) as any
+        const fm: any = mergeFrontmatter(options.frontmatter?.map(f => f.key) || [], fmDefaults, fmFromAi, pageMeta, url)
 
         // Write files
         await fsp.mkdir(contentRoot, { recursive: true })
