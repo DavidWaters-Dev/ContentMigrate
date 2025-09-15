@@ -117,8 +117,24 @@ export default defineEventHandler(async (event) => {
   const includeSet = new Set((body.includedUrls || []).filter(Boolean))
   const entries: Array<[string, string]> = []
   if (includeSet.size > 0) {
-    for (const [url, html] of job.fetched) {
-      if (includeSet.has(url)) entries.push([url, html])
+    for (const url of includeSet) {
+      const cached = job.fetched.get(url)
+      if (cached) { entries.push([url, cached]); continue }
+      // Fetch fresh if not in cache
+      try {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 15000)
+        const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'ContentMigrator/1.0' } })
+        clearTimeout(timeout)
+        if (res.ok) {
+          const html = await res.text()
+          entries.push([url, html])
+        } else {
+          logs.push(`Fetch failed ${res.status} ${res.statusText} for ${url}`)
+        }
+      } catch (e: any) {
+        logs.push(`Fetch error for ${url}: ${e?.message || e}`)
+      }
     }
   } else {
     for (const entry of job.fetched) entries.push(entry)

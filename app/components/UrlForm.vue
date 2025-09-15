@@ -54,16 +54,9 @@
                 class="mt-2"
               />
             </UFormField>
-            <UFormField label="Max pages" description="Try 50 for a quick pass">
-              <UInput
-                class="mt-2"
-                size="lg"
-                v-model.number="form.maxPages"
-                type="number"
-                min="1"
-                max="200"
-              />
-            </UFormField>
+            <div class="text-sm text-[var(--color-foreground-subtle)] mt-8">
+              The crawl is polite and bounded by internal safeguards.
+            </div>
           </div>
 
           <!-- Second row -->
@@ -95,6 +88,22 @@
               />
             </UFormField>
           </div>
+
+          <!-- Path filters -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <UFormField
+              label="Include paths"
+              description="Only crawl URLs whose path starts with any of these (e.g. /news, /blog)"
+            >
+              <UInputTags v-model="form.includePrefixes" placeholder="/news, /blog" />
+            </UFormField>
+            <UFormField
+              label="Exclude paths"
+              description="Skip URLs whose path starts with any of these (e.g. /wp-admin, /tag)"
+            >
+              <UInputTags v-model="form.excludePrefixes" placeholder="/wp-admin, /tag" />
+            </UFormField>
+          </div>
         </div>
       </template>
     </UAccordion>
@@ -107,10 +116,11 @@
   const submitting = ref(false);
   const form = reactive({
     rootUrl: "",
-    maxPages: 50,
     strategy: "sitemap+internal",
     concurrency: 2,
     respectRobots: true,
+    includePrefixes: [] as string[],
+    excludePrefixes: [] as string[],
   });
   const strategies = [
     { label: "Sitemap only", value: "sitemap-only" },

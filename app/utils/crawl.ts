@@ -11,7 +11,7 @@ export type CrawlJob = {
 
 export const crawlJobs = new Map<string, CrawlJob>()
 
-export async function startCrawl (rootUrl: string, opts: { maxPages: number; strategy: 'sitemap-only' | 'sitemap+internal'; concurrency: number; respectRobots?: boolean; delayMs?: number }) {
+export async function startCrawl (rootUrl: string, opts: { maxPages: number; strategy: 'sitemap-only' | 'sitemap+internal'; concurrency: number; respectRobots?: boolean; delayMs?: number; includePrefixes?: string[]; excludePrefixes?: string[] }) {
   const id = randomUUID()
   const job: CrawlJob = {
     id,
@@ -32,18 +32,52 @@ export async function startCrawl (rootUrl: string, opts: { maxPages: number; str
   return id
 }
 
-async function crawlSite (rootUrl: string, opts: { maxPages: number; strategy: 'sitemap-only' | 'sitemap+internal'; concurrency: number; respectRobots?: boolean; delayMs?: number }, job: CrawlJob) {
+async function crawlSite (rootUrl: string, opts: { maxPages: number; strategy: 'sitemap-only' | 'sitemap+internal'; concurrency: number; respectRobots?: boolean; delayMs?: number; includePrefixes?: string[]; excludePrefixes?: string[] }, job: CrawlJob) {
   const origin = new URL(rootUrl).origin
+  const rootHost = new URL(rootUrl).host
+  const rootHostNorm = normalizeHost(rootHost)
   job.logs.push(`[Crawl] Starting at ${rootUrl} (origin ${origin}) with opts ${JSON.stringify(opts)}`)
   const robots = opts.respectRobots === false ? (() => true) : await fetchRobots(origin)
   const perHostLastRequest = new Map<string, number>()
   const minDelay = Math.max(0, opts.delayMs ?? 0)
+  const inc = normalizePrefixes(opts.includePrefixes, origin)
+  const exc = normalizePrefixes(opts.excludePrefixes, origin)
+  const allowPath = (p: string) => {
+    const lp = (p || '').toLowerCase()
+    const incOk = inc.length ? inc.some(pre => lp.startsWith(pre)) : true
+    const excOk = !exc.some(pre => lp.startsWith(pre))
+    return incOk && excOk
+  }
   let seeds: string[] = []
   if (opts.strategy === 'sitemap-only' || opts.strategy === 'sitemap+internal') {
     seeds = await fetchSitemap(origin)
-    job.logs.push(`[Crawl] Sitemap seeds: ${seeds.length}`)
+    // Filter by same host (normalized) and include/exclude prefixes
+    seeds = seeds.filter(u => { 
+      try { 
+        const url = new URL(u)
+        if (normalizeHost(url.host) !== rootHostNorm) return false
+        const up = url.pathname
+        return allowPath(up) 
+      } catch { return false } 
+    })
+    job.logs.push(`[Crawl] Sitemap seeds after filters: ${seeds.length} (include=${inc.join('|') || 'none'}, exclude=${exc.join('|') || 'none'})`)
   }
-  if (seeds.length === 0) seeds = [rootUrl]
+  if (seeds.length === 0) {
+    if (inc.length > 0) {
+      // Seed from include prefixes (origin + prefix)
+      const seeded = new Set<string>()
+      for (const pre of inc) {
+        try {
+          const href = new URL(pre, origin).href
+          seeded.add(href)
+        } catch {}
+      }
+      seeds = Array.from(seeded)
+      job.logs.push(`[Crawl] No sitemap seeds matched filters; seeding from include prefixes: ${seeds.length}`)
+    } else {
+      seeds = [rootUrl]
+    }
+  }
   const queue: string[] = [...seeds]
   while (queue.length && job.fetched.size < opts.maxPages) {
     const urls = queue.splice(0, opts.concurrency)
@@ -53,6 +87,14 @@ async function crawlSite (rootUrl: string, opts: { maxPages: number; strategy: '
         job.logs.push(`[Crawl] Blocked by robots: ${url}`)
         return
       }
+      try {
+        const host = new URL(url).host
+        if (normalizeHost(host) !== rootHostNorm) {
+          job.logs.push(`[Crawl] Skipped different host: ${url}`)
+          return
+        }
+      } catch {}
+      try { const up = new URL(url).pathname; if (!allowPath(up)) { job.logs.push(`[Crawl] Skipped by path filter: ${url}`); return } } catch {}
       job.discovered.add(url)
       try {
         // Polite per-host delay
@@ -81,6 +123,7 @@ async function crawlSite (rootUrl: string, opts: { maxPages: number; strategy: '
           for (const l of links) {
             const u = new URL(l, origin).href
             if (u.startsWith(origin) && !job.discovered.has(u) && job.fetched.size + queue.length < opts.maxPages) {
+              try { const p = new URL(u).pathname; if (!allowPath(p)) continue } catch {}
               queue.push(u)
             }
           }
@@ -90,6 +133,32 @@ async function crawlSite (rootUrl: string, opts: { maxPages: number; strategy: '
       }
     }))
   }
+}
+
+function normalizePrefixes(arr?: string[], origin?: string) {
+  const out: string[] = []
+  for (const v of (arr || [])) {
+    let s = String(v || '').trim()
+    if (!s) continue
+    // If absolute URL provided, extract pathname
+    try {
+      if (/^https?:\/\//i.test(s)) {
+        s = new URL(s, origin || undefined).pathname
+      } else if (/^[\w.-]+\//.test(s)) { // domain-like without protocol
+        s = new URL('https://' + s).pathname
+      }
+    } catch {}
+    // strip trailing wildcards like /* or *
+    s = s.replace(/\*$|\/\*$/g, '')
+    s = s.startsWith('/') ? s : ('/' + s)
+    out.push(s.toLowerCase())
+  }
+  return out
+}
+
+function normalizeHost(host: string) {
+  const h = String(host || '').toLowerCase()
+  return h.startsWith('www.') ? h.slice(4) : h
 }
 
 async function fetchRobots (origin: string) {

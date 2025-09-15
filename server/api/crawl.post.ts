@@ -22,9 +22,11 @@ export default defineEventHandler(async (event) => {
   const strategy = body.strategy || 'sitemap+internal'
   const respectRobots = body.respectRobots !== false
   const delayMs = 750
+  const includePrefixes = Array.isArray(body.includePrefixes) ? body.includePrefixes : []
+  const excludePrefixes = Array.isArray(body.excludePrefixes) ? body.excludePrefixes : []
 
   console.log(`[Crawl] Starting`, body.rootUrl, { maxPages, strategy, concurrency, respectRobots, delayMs })
-  const crawlId = await startCrawl(body.rootUrl, { maxPages, strategy, concurrency, respectRobots, delayMs })
+  const crawlId = await startCrawl(body.rootUrl, { maxPages, strategy, concurrency, respectRobots, delayMs, includePrefixes, excludePrefixes })
   console.log(`[Crawl] Started id=${crawlId}`)
   return { crawlId, plannedPages: maxPages }
 })

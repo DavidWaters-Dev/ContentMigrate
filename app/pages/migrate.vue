@@ -22,9 +22,12 @@
 
       <!-- Select pages & Configure -->
       <section v-else-if="step === 'select'" class="space-y-6">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
           <h2 class="text-lg font-semibold">Select pages to migrate</h2>
-          <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" @click="resetAll">Restart</UButton>
+          <div class="flex items-center gap-2">
+            <UButton color="neutral" variant="ghost" icon="i-lucide-database" @click="importCrawl">Import crawled URLs to list</UButton>
+            <UButton color="neutral" variant="ghost" icon="i-lucide-rotate-ccw" @click="resetAll">Restart</UButton>
+          </div>
         </div>
 
         <UCard>
@@ -54,6 +57,51 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </UCard>
+
+        <!-- DB-backed pages list (search, paginate, select with max per run) -->
+        <UCard>
+          <div class="flex items-center gap-3 mb-3 flex-wrap">
+            <UInput v-model="q" placeholder="Search URLs (e.g., /news)" class="flex-1" />
+            <div class="flex items-center gap-2">
+              <USwitch v-model="hideMigrated" />
+              <span class="text-sm">Hide migrated</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <UInput v-model.number="maxPerRun" type="number" min="1" class="w-28" />
+              <span class="text-xs text-zinc-500">Max per run</span>
+            </div>
+          </div>
+          <div class="overflow-auto">
+            <table class="min-w-full text-sm">
+              <thead class="text-left text-zinc-600">
+                <tr>
+                  <th class="p-2 w-10">
+                    <UCheckbox :model-value="false" @update:model-value="selectAllOnPage" aria-label="Select all on page" />
+                  </th>
+                  <th class="p-2">URL</th>
+                  <th class="p-2 w-28">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in dbPages" :key="p.id" class="border-t">
+                  <td class="p-2 align-top">
+                    <UCheckbox :model-value="selectedSet.has(p.url)" :disabled="!selectedSet.has(p.url) && selectedSet.size >= maxPerRun" @update:model-value="() => toggleSelect(p.url)" />
+                  </td>
+                  <td class="p-2"><a :href="p.url" target="_blank" rel="noopener" class="text-blue-700 underline break-all">{{ p.url }}</a></td>
+                  <td class="p-2"><UBadge :color="p.status==='migrated'?'success':'neutral'" :label="p.status" variant="soft" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between mt-3 text-sm">
+            <div>Selected: {{ selectedSet.size }} / {{ maxPerRun }}</div>
+            <div class="flex items-center gap-2">
+              <UButton size="xs" variant="ghost" @click="() => { if(page>1){ page--; } }">Prev</UButton>
+              <span>Page {{ page }}</span>
+              <UButton size="xs" variant="ghost" @click="() => { if(page*limit < total){ page++; } }">Next</UButton>
+            </div>
           </div>
         </UCard>
 
@@ -120,7 +168,45 @@
   const migrationLogs = ref<string[]>([])
   const okCount = ref(0)
   const errorCount = ref(0)
-  const hasClientPayload = computed(() => !!pending.value)
+
+  // DB-backed pages state
+  const q = ref('')
+  const hideMigrated = ref(true)
+  const page = ref(1)
+  const limit = ref(50)
+  const total = ref(0)
+  const dbPages = ref<Array<{ id:string; url:string; path:string; status:string }>>([])
+  const selectedSet = ref<Set<string>>(new Set())
+  const maxPerRun = ref(50)
+  async function loadPages() {
+    try {
+      const params = new URLSearchParams()
+      if (q.value) params.set('q', q.value)
+      if (hideMigrated.value) params.set('status', 'new')
+      params.set('limit', String(limit.value))
+      params.set('page', String(page.value))
+      const res = await $fetch<{ pages:any[]; count:number; page:number; limit:number }>(`/api/pages?${params.toString()}`)
+      dbPages.value = res.pages as any
+      total.value = res.count
+      const urlsOnPage = new Set(dbPages.value.map(p => p.url))
+      for (const u of Array.from(selectedSet.value)) { if (!urlsOnPage.has(u)) selectedSet.value.delete(u) }
+    } catch {}
+  }
+  watch([q, hideMigrated, page, limit] as any, loadPages)
+  onMounted(() => { loadPages() })
+  function toggleSelect(url: string) {
+    const s = selectedSet.value
+    if (s.has(url)) { s.delete(url); return }
+    if (s.size >= maxPerRun.value) return
+    s.add(url)
+  }
+  function selectAllOnPage() {
+    for (const p of dbPages.value) {
+      if (hideMigrated.value && p.status !== 'new') continue
+      if (selectedSet.value.size >= maxPerRun.value) break
+      selectedSet.value.add(p.url)
+    }
+  }
 
   const crawlDone = computed(() => !status.value.running && status.value.fetched.length > 0)
   const step = computed<'start' | 'select' | 'migrating'>(() => {
@@ -160,6 +246,15 @@
     migrationLogs.value = []
   }
 
+  async function importCrawl() {
+    try {
+      await $fetch('/api/pages/import-from-crawl', { method: 'POST', body: { crawlId: crawlId.value, rootUrl: store.rootUrl.value } })
+      await loadPages()
+    } catch (e:any) {
+      status.value.error = e?.data?.statusMessage || e?.message || String(e)
+    }
+  }
+
   async function runMigration() {
     if (!crawlId.value) return
     if (status.value.fetched.length === 0) {
@@ -169,9 +264,10 @@
     try {
       migrating.value = true
       migrationLogs.value = []
+      const urls = includedUrls.value.length ? includedUrls.value : Array.from(selectedSet.value)
       const res = await $fetch<MigrationResponse>('/api/migrate', {
         method: 'POST',
-        body: { crawlId: crawlId.value, includedUrls: includedUrls.value, options: { output: settings.value.output, selector: settings.value.selector, frontmatter: settings.value.frontmatter, slugStrategy: settings.value.slugStrategy } }
+        body: { crawlId: crawlId.value, includedUrls: urls, options: { output: settings.value.output, selector: settings.value.selector, frontmatter: settings.value.frontmatter, slugStrategy: settings.value.slugStrategy } }
       })
       migrationLogs.value = res.logs || []
       okCount.value = Array.isArray(res.results) ? res.results.filter(r => r.status === 'ok').length : 0
@@ -181,6 +277,11 @@
           if (r.status === 'ok') {
             convertedMap.value[r.url] = { url: r.url, slug: r.slug, mdPath: r.mdPath, ymlPath: r.ymlPath, jsonPath: r.jsonPath, at: new Date().toISOString() }
           }
+        }
+        const okUrls = res.results.filter(r => r.status==='ok').map(r => r.url)
+        if (okUrls.length) {
+          try { await $fetch('/api/pages/migrated', { method: 'PATCH', body: { urls: okUrls } }); await loadPages() } catch {}
+          selectedSet.value = new Set()
         }
       }
     } catch (e: any) {
