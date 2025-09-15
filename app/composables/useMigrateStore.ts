@@ -11,8 +11,7 @@ type ConvertedRecord = {
 
 export const useMigrateStore = () => {
   const settings = useState('migrate_settings', () => ({
-    contentDir: 'content/news',
-    mediaDir: 'public/images/news',
+    clientSave: true,
     frontmatter: [
       { key: 'title' },
       { key: 'date' },
@@ -54,4 +53,3 @@ export const useMigrateStore = () => {
 
   return { settings, convertedMap }
 }
-

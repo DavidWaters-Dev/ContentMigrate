@@ -59,12 +59,28 @@
 
         <MigrationSettings />
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
           <UButton :disabled="includedUrls.length === 0" :loading="migrating" icon="i-lucide-file-down" @click="runMigration">
             Migrate selected pages ({{ includedUrls.length }})
           </UButton>
           <span class="text-sm text-zinc-500" v-if="migrating">Migrating…</span>
         </div>
+
+        <UAlert
+          v-if="okCount === 0 && migrationLogs.length"
+          color="warning"
+          icon="i-lucide-alert-circle"
+          title="No pages converted"
+          description="Check your OpenAI API key, page selection, and optional CSS selector (e.g., 'article')."
+          variant="soft"
+        />
+
+        <UCard v-if="migrationLogs.length" class="text-sm">
+          <div class="flex items-center gap-6">
+            <div>Converted: <span class="font-medium">{{ okCount }}</span></div>
+            <div>Errors: <span class="font-medium">{{ errorCount }}</span></div>
+          </div>
+        </UCard>
       </section>
 
       <!-- Migrating -->
@@ -102,6 +118,9 @@
 
   const migrating = ref(false)
   const migrationLogs = ref<string[]>([])
+  const okCount = ref(0)
+  const errorCount = ref(0)
+  const hasClientPayload = computed(() => !!pending.value)
 
   const crawlDone = computed(() => !status.value.running && status.value.fetched.length > 0)
   const step = computed<'start' | 'select' | 'migrating'>(() => {
@@ -150,32 +169,20 @@
     try {
       migrating.value = true
       migrationLogs.value = []
-      const { jobId } = await $fetch<{ jobId: string }>('/api/migrate/enqueue', {
+      const res = await $fetch<MigrationResponse>('/api/migrate', {
         method: 'POST',
-        body: { crawlId: crawlId.value, includedUrls: includedUrls.value, options: settings.value }
+        body: { crawlId: crawlId.value, includedUrls: includedUrls.value, options: { output: settings.value.output, selector: settings.value.selector, frontmatter: settings.value.frontmatter, slugStrategy: settings.value.slugStrategy } }
       })
-      await new Promise<void>((resolve) => {
-        const int = setInterval(async () => {
-          const s = await $fetch(`/api/migrate/jobs/${jobId}/status`)
-          if (Array.isArray(s?.logs)) migrationLogs.value = s.logs
-          if (s?.status === 'completed') {
-            clearInterval(int)
-            const res = s?.results as MigrationResponse
-            if (res?.results) {
-              for (const r of res.results) {
-                if (r.status === 'ok') {
-                  convertedMap.value[r.url] = { url: r.url, slug: r.slug, mdPath: r.mdPath, ymlPath: r.ymlPath, jsonPath: r.jsonPath, at: new Date().toISOString() }
-                }
-              }
-            }
-            resolve()
-          } else if (s?.status === 'failed') {
-            clearInterval(int)
-            status.value.error = s?.error || 'Migration failed'
-            resolve()
+      migrationLogs.value = res.logs || []
+      okCount.value = Array.isArray(res.results) ? res.results.filter(r => r.status === 'ok').length : 0
+      errorCount.value = Array.isArray(res.results) ? res.results.filter(r => r.status === 'error').length : 0
+      if (Array.isArray(res.results)) {
+        for (const r of res.results) {
+          if (r.status === 'ok') {
+            convertedMap.value[r.url] = { url: r.url, slug: r.slug, mdPath: r.mdPath, ymlPath: r.ymlPath, jsonPath: r.jsonPath, at: new Date().toISOString() }
           }
-        }, 1000)
-      })
+        }
+      }
     } catch (e: any) {
       status.value.error = e?.data?.statusMessage || e?.message || String(e)
       migrationLogs.value.push(`Error: ${status.value.error}`)
@@ -183,4 +190,6 @@
       migrating.value = false
     }
   }
+
+  // Files are written on the server to ~/Downloads/contentmigrate
 </script>

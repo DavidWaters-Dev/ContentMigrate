@@ -1,13 +1,7 @@
 <template>
   <UCard class="space-y-5" variant="soft">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <UFormField label="Content folder" description="Where to save Markdown files (relative to repo)">
-        <UInput v-model="s.contentDir" placeholder="content/news" size="lg" />
-      </UFormField>
-      <UFormField label="Media folder" description="Where to save images (e.g. public/images/news)">
-        <UInput v-model="s.mediaDir" placeholder="public/images/news" size="lg" />
-      </UFormField>
-    </div>
+    <UAlert color="neutral" variant="soft" icon="i-lucide-info" title="Output location" :description="'Files are saved to your Downloads/contentmigrate folder under md/ and media/.'" />
+    
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <UFormField label="Main content selector" description="Optional CSS selector to extract (e.g. article)">
@@ -45,6 +39,7 @@
         <UCheckbox v-model="s.output.yml" label="YAML (.yml)" />
         <UCheckbox v-model="s.output.json" label="JSON (.json)" />
       </div>
+      <p class="text-xs text-[var(--color-foreground-subtle)] mt-1">We will create <code>md/</code> and <code>media/</code> folders in the chosen directory.</p>
     </UFormField>
 
     <UFormField label="Extra prompt context" description="Optional guidance to tailor extraction">
@@ -66,5 +61,6 @@
   function removeField(idx: number) {
     s.frontmatter.splice(idx, 1)
   }
-</script>
 
+  // Server writes to Downloads/contentmigrate
+</script>

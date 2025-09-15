@@ -5,11 +5,14 @@ import { addUsage } from '../utils/usage'
 import { load as loadCheerio } from 'cheerio'
 import { promises as fsp } from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
 
-function safeJoin(root: string, p: string) {
-  // Prevent path traversal and normalize
-  const cleaned = (p || '').replace(/\\/g, '/').replace(/^\//, '').replace(/\.\.+/g, '.')
-  return path.join(root, cleaned)
+function resolveTarget(root: string, p: string) {
+  // If absolute path provided, respect it; otherwise join under root
+  const normalized = path.normalize(p || '')
+  if (path.isAbsolute(normalized)) return normalized
+  const joined = path.join(root, normalized.replace(/^\/+/, ''))
+  return joined
 }
 
 async function downloadImageTo(url: string, absDir: string): Promise<{ absPath: string, publicPath: string } | null> {
@@ -48,8 +51,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const options: MigrationOptions = {
-    contentDir: body.options?.contentDir || 'content/migrated',
-    mediaDir: body.options?.mediaDir || 'public/images/migrated',
     frontmatter: body.options?.frontmatter || [],
     additionalPrompt: body.options?.additionalPrompt || '',
     selector: body.options?.selector || '',
@@ -71,12 +72,15 @@ export default defineEventHandler(async (event) => {
   }
 
   logs.push(`Starting migration for ${entries.length} pages`)
+  console.log(`[Migrate] Starting migration for`, entries.length, 'pages')
 
-  // Project root
-  const root = process.cwd()
-  // Resolve content/media absolute roots
-  const contentRoot = safeJoin(root, options.contentDir)
-  const mediaRoot = safeJoin(root, options.mediaDir)
+  // Always save to ~/Downloads/contentmigrate with md/ and media/ subfolders
+  const baseRoot = path.join(os.homedir(), 'Downloads', process.env.MIGRATE_DOWNLOAD_SUBFOLDER || 'contentmigrate')
+  const contentRoot = path.join(baseRoot, 'md')
+  const mediaRoot = path.join(baseRoot, 'media')
+  await fsp.mkdir(contentRoot, { recursive: true })
+  await fsp.mkdir(mediaRoot, { recursive: true })
+  logs.push(`Writing to ${contentRoot} and ${mediaRoot}`)
 
   const pageConcurrency = Math.max(1, Math.min(4, Number(process.env.MIGRATION_PAGE_CONCURRENCY || 2)))
   for (let i = 0; i < entries.length; i += pageConcurrency) {
@@ -104,12 +108,12 @@ export default defineEventHandler(async (event) => {
         // Create media directory for this page
         const pageMediaAbs = path.join(mediaRoot, slug)
         let imagesSaved = 0
-        const savedImages: Array<{ orig: string, file: string }> = []
+        const savedImages: Array<{ orig: string, file: string, name: string }> = []
         for (const img of allImageUrls) {
           const saved = await downloadImageTo(img, pageMediaAbs)
           if (saved) {
             imagesSaved++
-            savedImages.push({ orig: img, file: saved.absPath })
+            savedImages.push({ orig: img, file: saved.absPath, name: saved.publicPath })
           }
         }
         rlogs.push(`Saved ${imagesSaved} images to ${pageMediaAbs}`)
@@ -123,19 +127,12 @@ export default defineEventHandler(async (event) => {
         const mdPath = path.join(contentRoot, `${slug}.md`)
         const ymlPath = path.join(contentRoot, `${slug}.yml`)
         const jsonPath = path.join(contentRoot, `${slug}.json`)
-        // Determine how to reference images in Markdown
+        // Determine how to reference images in Markdown relative to md/
         const replacements = new Map<string, string>()
         for (const si of savedImages) {
-          let ref: string
-          const publicDir = safeJoin(root, 'public')
-          if (si.file.startsWith(publicDir)) {
-            const rel = path.relative(publicDir, si.file).replace(/\\/g, '/')
-            ref = '/' + rel
-          } else {
-            const rel = path.relative(path.dirname(mdPath), si.file).replace(/\\/g, '/')
-            ref = rel
-          }
-          replacements.set(si.orig, ref)
+          const target = path.join(mediaRoot, slug, si.name)
+          const rel = path.relative(path.dirname(mdPath), target).replace(/\\/g, '/')
+          replacements.set(si.orig, rel)
         }
 
         // Rewrite markdown image links by a simple replacement of known URLs
@@ -162,7 +159,8 @@ export default defineEventHandler(async (event) => {
           await fsp.writeFile(ymlPath, `${yaml}\n`, 'utf8')
         }
         if (options.output?.json) {
-          await fsp.writeFile(jsonPath, JSON.stringify({ frontmatter: fm, markdown: md, url }, null, 2), 'utf8')
+          const payload = JSON.stringify({ frontmatter: fm, markdown: md, url }, null, 2)
+          await fsp.writeFile(jsonPath, payload, 'utf8')
         }
 
         // Increment usage per successful page
@@ -181,5 +179,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const response: MigrationResponse = { results, logs }
+  try {
+    const ok = results.filter(r => r.status === 'ok').length
+    const err = results.filter(r => r.status === 'error').length
+    console.log(`[Migrate] Completed. ok=${ok}, error=${err}`)
+  } catch {}
   return response
 })
