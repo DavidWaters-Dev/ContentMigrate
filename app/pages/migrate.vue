@@ -111,7 +111,6 @@
           <UButton :disabled="(includedUrls.length + selectedSet.size) === 0" :loading="migrating" icon="i-lucide-file-down" @click="runMigration">
             Migrate selected pages ({{ includedUrls.length + selectedSet.size }})
           </UButton>
-          <UButton v-if="settings.clientSave && pending" color="neutral" icon="i-lucide-save" @click="saveClientFiles">Save to chosen folder</UButton>
           <span class="text-sm text-zinc-500" v-if="migrating">Migrating…</span>
         </div>
 
@@ -130,6 +129,15 @@
             <div>Errors: <span class="font-medium">{{ errorCount }}</span></div>
           </div>
         </UCard>
+
+        <UAlert
+          v-if="okCount > 0"
+          color="neutral"
+          icon="i-lucide-download"
+          title="Files saved"
+          description="Check Downloads/contentmigrate/Content for Markdown and metadata, and Downloads/contentmigrate/media for images."
+          variant="soft"
+        />
       </section>
 
       <!-- Migrating -->
@@ -169,7 +177,6 @@
   const migrationLogs = ref<string[]>([])
   const okCount = ref(0)
   const errorCount = ref(0)
-  const pending = ref<MigrationResponse | null>(null)
 
   // DB-backed pages state
   const q = ref('')
@@ -248,82 +255,6 @@
     migrationLogs.value = []
   }
 
-  async function ensurePermission(dir: FileSystemDirectoryHandle) {
-    // @ts-ignore
-    const qs = await (dir as any).queryPermission?.({ mode: 'readwrite' })
-    if (qs === 'granted') return true
-    // @ts-ignore
-    const rs = await (dir as any).requestPermission?.({ mode: 'readwrite' })
-    return rs === 'granted'
-  }
-
-  async function getDir(parent: FileSystemDirectoryHandle, name: string) {
-    // @ts-ignore
-    return await parent.getDirectoryHandle(name, { create: true })
-  }
-  async function writeFile(dir: FileSystemDirectoryHandle, name: string, contents: string | Blob) {
-    // @ts-ignore
-    const fh = await dir.getFileHandle(name, { create: true })
-    // @ts-ignore
-    const ws = await fh.createWritable()
-    await ws.write(contents)
-    await ws.close()
-  }
-
-  async function saveClientFiles() {
-    try {
-      const res = pending.value
-      if (!res) return
-      let root: FileSystemDirectoryHandle | undefined = (window as any).__contentMigrateDirHandle
-      if (!root) {
-        // @ts-ignore
-        root = await (window as any).showDirectoryPicker()
-        ;(window as any).__contentMigrateDirHandle = root
-      }
-      if (!(await ensurePermission(root!))) {
-        status.value.error = 'Folder permission denied'
-        return
-      }
-      const contentDir = await getDir(root!, 'Content')
-      const mediaDir = await getDir(root!, 'media')
-      const failed: Array<{ slug:string; name:string; url:string; reason?:string }> = []
-      for (const r of (res.results as any[])) {
-        if (r.status !== 'ok') continue
-        const slug = r.slug
-        if (r.mdContent && settings.value.output.md) await writeFile(contentDir, `${slug}.md`, new Blob([r.mdContent], { type: 'text/markdown' }))
-        if (r.ymlContent && settings.value.output.yml) await writeFile(contentDir, `${slug}.yml`, new Blob([r.ymlContent], { type: 'text/yaml' }))
-        if (r.jsonContent && settings.value.output.json) await writeFile(contentDir, `${slug}.json`, new Blob([r.jsonContent], { type: 'application/json' }))
-        if (settings.value.downloadImages && Array.isArray(r.images)) {
-          const pageMedia = await getDir(mediaDir, slug)
-          const maxN = Math.max(1, Number(settings.value.maxImagesPerPage || 20))
-          let count = 0
-          for (const img of (r.images as any[])) {
-            if (count >= maxN) break
-            try {
-              const resp = await fetch(img.url, { mode: 'cors' })
-              const type = resp.headers.get('content-type') || ''
-              const len = Number(resp.headers.get('content-length') || '0')
-              const maxBytes = Math.max(1, Number(settings.value.maxImageMB || 8)) * 1024 * 1024
-              if (!resp.ok || !type.startsWith('image/') || (len && len > maxBytes)) { failed.push({ slug, name: img.name, url: img.url, reason: 'type/size' }); continue }
-              const blob = await resp.blob()
-              if (blob.size > maxBytes) { failed.push({ slug, name: img.name, url: img.url, reason: 'size' }); continue }
-              await writeFile(pageMedia, img.name, blob)
-              count++
-            } catch (e:any) { failed.push({ slug, name: img.name, url: img.url, reason: e?.message || 'fetch' }) }
-          }
-        }
-      }
-      if (failed.length) {
-        const lines = failed.map(f => f.url).join('\n')
-        await writeFile(contentDir, 'images.txt', new Blob([lines], { type: 'text/plain' }))
-        const sh = ['#!/usr/bin/env bash', 'set -e', '# Download images listed in images.txt', 'while IFS= read -r url; do', '  echo "Downloading $url"', '  fname="${url##*/}"', '  curl -L "$url" -o "$fname"', 'done < images.txt'].join('\n')
-        await writeFile(contentDir, 'download.sh', new Blob([sh], { type: 'text/x-sh' }))
-      }
-    } catch (e:any) {
-      status.value.error = e?.message || 'Save failed'
-    }
-  }
-
   async function importCrawl() {
     try {
       await $fetch('/api/pages/import-from-crawl', { method: 'POST', body: { crawlId: crawlId.value, rootUrl: store.rootUrl.value } })
@@ -334,21 +265,32 @@
   }
 
   async function runMigration() {
-    if (!crawlId.value) return
     try {
+      status.value.error = ''
       migrating.value = true
       migrationLogs.value = []
       const urls = includedUrls.value.length ? includedUrls.value : Array.from(selectedSet.value)
       if (urls.length === 0) {
         status.value.error = 'No pages selected. Use the list above to select URLs, or ensure your crawl discovered URLs (add Include paths as tags and press Enter).'
+        migrating.value = false
         return
       }
       const res = await $fetch<MigrationResponse>('/api/migrate', {
         method: 'POST',
-        body: { crawlId: crawlId.value, includedUrls: urls, options: { clientSave: settings.value.clientSave, output: settings.value.output, selector: settings.value.selector, frontmatter: settings.value.frontmatter, slugStrategy: settings.value.slugStrategy } }
+        body: {
+          crawlId: crawlId.value,
+          includedUrls: urls,
+          options: {
+            clientSave: false,
+            output: settings.value.output,
+            selector: settings.value.selector,
+            frontmatter: settings.value.frontmatter,
+            slugStrategy: settings.value.slugStrategy,
+            additionalPrompt: settings.value.additionalPrompt,
+          }
+        }
       })
       migrationLogs.value = res.logs || []
-      pending.value = settings.value.clientSave ? res : null
       okCount.value = Array.isArray(res.results) ? res.results.filter(r => r.status === 'ok').length : 0
       errorCount.value = Array.isArray(res.results) ? res.results.filter(r => r.status === 'error').length : 0
       if (Array.isArray(res.results)) {

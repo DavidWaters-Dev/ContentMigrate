@@ -1,6 +1,6 @@
 <template>
   <UCard class="space-y-5" variant="soft">
-    <UAlert color="neutral" variant="soft" icon="i-lucide-info" title="Output location" :description="'Files are saved to your Downloads/contentmigrate folder under Content/ and media/." />
+    <UAlert color="neutral" variant="soft" icon="i-lucide-info" title="Output location" description="Files are saved to your Downloads/contentmigrate folder under Content/ and media/." />
     
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -54,5 +54,5 @@
       s.frontmatter = keys.map(k => ({ key: k }))
     }
   })
-  // No client-side folder picker; server writes to Downloads/contentmigrate
+  // Default output path points to ~/Downloads/contentmigrate on the server
 </script>

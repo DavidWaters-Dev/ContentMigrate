@@ -107,8 +107,8 @@ async function downloadImageTo(url: string, absDir: string): Promise<{ absPath: 
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ crawlId: string, includedUrls?: string[], options?: MigrationOptions, skipQuota?: boolean }>(event)
-  const job = crawlJobs.get(body.crawlId)
-  if (!job) throw createError({ statusCode: 404, statusMessage: 'crawl not found' })
+  const job = body.crawlId ? crawlJobs.get(body.crawlId) : null
+  if (body.crawlId && !job) throw createError({ statusCode: 404, statusMessage: 'crawl not found' })
 
   const logs: string[] = []
   const results: MigrationPageResult[] = []
@@ -116,28 +116,33 @@ export default defineEventHandler(async (event) => {
 
   const includeSet = new Set((body.includedUrls || []).filter(Boolean))
   const entries: Array<[string, string]> = []
+  const fetchAndStore = async (url: string) => {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 15000)
+      const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'ContentMigrator/1.0' } })
+      clearTimeout(timeout)
+      if (res.ok) {
+        const html = await res.text()
+        entries.push([url, html])
+      } else {
+        logs.push(`Fetch failed ${res.status} ${res.statusText} for ${url}`)
+      }
+    } catch (e: any) {
+      logs.push(`Fetch error for ${url}: ${e?.message || e}`)
+    }
+  }
+
   if (includeSet.size > 0) {
     for (const url of includeSet) {
-      const cached = job.fetched.get(url)
+      const cached = job?.fetched?.get(url)
       if (cached) { entries.push([url, cached]); continue }
-      // Fetch fresh if not in cache
-      try {
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 15000)
-        const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'ContentMigrator/1.0' } })
-        clearTimeout(timeout)
-        if (res.ok) {
-          const html = await res.text()
-          entries.push([url, html])
-        } else {
-          logs.push(`Fetch failed ${res.status} ${res.statusText} for ${url}`)
-        }
-      } catch (e: any) {
-        logs.push(`Fetch error for ${url}: ${e?.message || e}`)
-      }
+      await fetchAndStore(url)
     }
-  } else {
+  } else if (job) {
     for (const entry of job.fetched) entries.push(entry)
+  } else {
+    logs.push('No crawl ID provided; no URLs to migrate')
   }
 
   const options: MigrationOptions = {

@@ -11,7 +11,6 @@ type ConvertedRecord = {
 
 export const useMigrateStore = () => {
   const settings = useState('migrate_settings', () => ({
-    clientSave: false,
     frontmatter: [
       { key: 'title' },
       { key: 'date' },

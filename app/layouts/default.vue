@@ -15,15 +15,12 @@
     >
       <UContainer class="flex items-center justify-between h-16">
         <div class="flex items-center gap-4">
-          <div class="text-base font-extrabold tracking-tight">ContentMigrate</div>
-          <div
-            class="text-xs font-medium tracking-tight text-[var(--color-foreground-subtle)]"
-          >
-            By David Waters
-          </div>
+          <div class="text-base font-black tracking-tight">CONTENTMigrate</div>
         </div>
         <div class="flex items-center gap-3">
-          <UButton to="/migrate" color="primary" variant="ghost">Start Migration</UButton>
+          <UButton to="/migrate" color="primary" variant="ghost"
+            >Start Migration</UButton
+          >
           <UButton to="/jobs" color="neutral" variant="ghost">Jobs</UButton>
           <UButton
             variant="ghost"
@@ -32,10 +29,7 @@
             @click="toggleColorMode"
             :aria-label="`Switch to ${nextMode} mode`"
           />
-          <LoginLink external> Sign in </LoginLink>
-          <NuxtLink to="/api/logout" external> Sign out </NuxtLink>
-
-          <RegisterLink external> Sign up </RegisterLink>
+          3033
         </div>
       </UContainer>
     </header>
